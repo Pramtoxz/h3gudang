@@ -36,8 +36,7 @@ class CheckMenuAccess
             return $next($request);
         }
 
-        $hasAccess = DB::connection('pgsql')
-            ->table('menus')
+        $hasAccess = DB::table('menus')
             ->join('menu_role', 'menus.id', '=', 'menu_role.menu_id')
             ->whereIn('menu_role.role', $roles)
             ->where('menus.status_aktif', true)

@@ -10,16 +10,12 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'sales_users',
-        ],
-        'api' => [
-            'driver' => 'custom-token',
-            'provider' => 'sales_users',
+            'provider' => 'users',
         ],
     ],
 
     'providers' => [
-        'sales_users' => [
+        'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
         ],

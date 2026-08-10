@@ -6,8 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    protected $connection = 'pgsql';
-
     public function up(): void
     {
         Schema::create('sessions', function (Blueprint $table) {

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MenuRole extends Model
 {
-    protected $connection = 'pgsql';
     protected $table = 'menu_role';
 
     protected $fillable = ['menu_id', 'role'];

@@ -20,7 +20,7 @@ class MenuController extends Controller
             ->orderBy('urutan')
             ->get();
 
-        $allRoles = ['IT', 'KACAB', 'MD'];
+        $allRoles = ['Admin'];
 
         return Inertia::render('settings/menus/Index', [
             'menus' => $menus,
@@ -39,7 +39,7 @@ class MenuController extends Controller
             'urutan' => 'nullable|integer|min:0',
             'status_aktif' => 'nullable|boolean',
             'roles' => 'nullable|array',
-            'roles.*' => 'in:IT,KACAB,MD',
+            'roles.*' => 'string|max:50',
         ]);
 
         try {
@@ -81,7 +81,7 @@ class MenuController extends Controller
             'urutan' => 'nullable|integer|min:0',
             'status_aktif' => 'nullable|boolean',
             'roles' => 'nullable|array',
-            'roles.*' => 'in:IT,KACAB,MD',
+            'roles.*' => 'string|max:50',
         ]);
 
         try {

@@ -8,8 +8,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Menu extends Model
 {
-    protected $connection = 'pgsql';
-
     protected $fillable = [
         'nama_menu',
         'ikon',
