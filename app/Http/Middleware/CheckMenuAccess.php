@@ -20,19 +20,12 @@ class CheckMenuAccess
         $roles = $user->getRoles();
 
         if (empty($roles)) {
-            return redirect()->route('dashboard')
-                ->with('error', 'Anda tidak memiliki akses.');
+            abort(403, 'Anda tidak memiliki akses.');
         }
 
-        $routeName = $request->route()->getName();
+        $routeName = $request->route()?->getName();
 
         if (!$routeName) {
-            return $next($request);
-        }
-
-        $baseRoute = explode('.', $routeName)[0] ?? null;
-
-        if (!$baseRoute) {
             return $next($request);
         }
 
@@ -40,17 +33,26 @@ class CheckMenuAccess
             ->join('menu_role', 'menus.id', '=', 'menu_role.menu_id')
             ->whereIn('menu_role.role', $roles)
             ->where('menus.status_aktif', true)
-            ->where(function ($query) use ($baseRoute) {
-                $query->where('menus.route', 'like', $baseRoute . '%')
-                    ->orWhere('menus.url', 'like', '/' . $baseRoute . '%');
-            })
+            ->where('menus.route', 'like', $this->prefixModul($routeName) . '%')
             ->exists();
 
         if (!$hasAccess) {
-            return redirect()->route('dashboard')
-                ->with('error', 'Anda tidak memiliki akses ke halaman ini.');
+            abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }
 
         return $next($request);
+    }
+
+    /**
+     * Nama route admin berbentuk `admin.<modul>.<aksi>`, sehingga hak akses
+     * diukur pada dua segmen pertama agar berlaku per modul, bukan per aplikasi.
+     */
+    private function prefixModul(string $routeName): string
+    {
+        $segmen = explode('.', $routeName);
+
+        return count($segmen) > 2
+            ? $segmen[0] . '.' . $segmen[1]
+            : $routeName;
     }
 }

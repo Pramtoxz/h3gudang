@@ -118,7 +118,7 @@ export default function Login() {
                                     PT. Menara Agung
                                 </h1>
                                 <p className="mt-2 text-gray-600">
-                                    Main Dealer Honda Sumatera Barat
+                                    Honda Sumatera Barat
                                 </p>
                             </div>
                         </div>

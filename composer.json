@@ -13,8 +13,10 @@
         "barryvdh/laravel-dompdf": "^3.0",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
+        "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
-        "laravel/wayfinder": "^0.1.9"
+        "laravel/wayfinder": "^0.1.9",
+        "spatie/simple-excel": "^3.10"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

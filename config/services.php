@@ -40,4 +40,8 @@ return [
         'secret_key' => env('RECAPTCHA_SECRET_KEY'),
     ],
 
+    'firebase' => [
+        'credentials_path' => env('FCM_CREDENTIALS_PATH', 'firebase.json'),
+    ],
+
 ];

@@ -13,7 +13,7 @@ export default function AppLogo() {
                     PT. Menara Agung
                 </span>
                 <span className="truncate border-t border-sidebar-border pt-0.5 text-[10px] text-sidebar-foreground/70">
-                    Main Dealer Honda Sumatera Barat
+                    Honda Sumatera Barat
                 </span>
             </div>
         </>

@@ -1,0 +1,1 @@
+import{b as c}from"./loader-circle-BzH4qJjc.js";const e=[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"m9 12 2 2 4-4",key:"dzmm74"}]],i=c("CircleCheck",e);const o=[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"M12 16v-4",key:"1dtifu"}],["path",{d:"M12 8h.01",key:"e9boi3"}]],r=c("Info",o);export{i as C,r as I};
