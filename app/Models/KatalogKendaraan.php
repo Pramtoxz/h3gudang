@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class KatalogKendaraan extends Model
 {
-    protected $table = 'pmov2.katalog_kendaraan';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'katalog_kendaraan';
 
     protected $fillable = [
         'kode_motor',

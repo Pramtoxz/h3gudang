@@ -11,7 +11,7 @@ class TokoRepository
 
     public function barisExportToko(): array
     {
-        return DB::connection('pgsql')->select("
+        return DB::connection('pgsql_pmo')->select("
             SELECT
                 t.toko AS nama_toko,
                 COALESCE(t.fk_sales, '') AS salesman,
@@ -83,11 +83,11 @@ class TokoRepository
 
     private function tabelToko(): Builder
     {
-        return DB::connection('pgsql')->table('pmov2.tbltoko');
+        return DB::connection('pgsql_pmo')->table('pmov2.tbltoko');
     }
 
     private function tabelUsers(): Builder
     {
-        return DB::connection('pgsql')->table('pmov2.users');
+        return DB::connection('pgsql_pmo')->table('pmov2.users');
     }
 }

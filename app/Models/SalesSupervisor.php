@@ -10,7 +10,9 @@ class SalesSupervisor extends Model
 {
     use HasFactory;
 
-    protected $table = 'pmov2.sales_supervisor';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'sales_supervisor';
 
     protected $fillable = [
         'nama',

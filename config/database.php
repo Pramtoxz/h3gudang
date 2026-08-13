@@ -53,7 +53,7 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => env('DB_PGSQL_SCHEMA', 'pmov2'),
+            'search_path' => env('DB_PGSQL_SCHEMA', 'warehouse'),
             'sslmode' => 'prefer',
         ],
 
@@ -77,13 +77,35 @@ return [
             'url' => env('DB_URL_LIVE'),
             'host' => env('DB_HOST_LIVE', '127.0.0.1'),
             'port' => env('DB_PORT_LIVE', '5432'),
-            'database' => env('DB_DATABASE_LIVE', 'dms_clone'),
+            'database' => env('DB_DATABASE_LIVE', ''),
             'username' => env('DB_USERNAME_LIVE', 'postgres'),
             'password' => env('DB_PASSWORD_LIVE', ''),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+        /*
+         * Data bisnis PMO — schema `pmov2`, salinan/instance production.
+         *
+         * BOLEH tulis (toko, keranjang, notifikasi, OTP, token mobile), tapi
+         * strukturnya TIDAK boleh disentuh: jangan pernah menjalankan migration
+         * ke koneksi ini. Setiap kali schema-nya disalin ulang, apa pun yang
+         * kita tambahkan di sana akan hilang.
+         */
+        'pgsql_pmo' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL_PMO'),
+            'host' => env('DB_HOST_PMO', '202.78.200.29'),
+            'port' => env('DB_PORT_PMO', '51098'),
+            'database' => env('DB_DATABASE_PMO', 'menara_agung_live'),
+            'username' => env('DB_USERNAME_PMO', 'postgres'),
+            'password' => env('DB_PASSWORD_PMO', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => env('DB_PGSQL_SCHEMA_PMO', 'pmov2'),
             'sslmode' => 'prefer',
         ],
 

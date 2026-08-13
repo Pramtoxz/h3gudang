@@ -11,7 +11,9 @@ class CartItem extends Model
 {
     use HasFactory;
 
-    protected $table = 'pmov2.item_keranjang';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'item_keranjang';
 
     protected $fillable = [
         'keranjang_id',

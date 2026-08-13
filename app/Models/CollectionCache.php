@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class CollectionCache extends Model
 {
-    protected $table = 'pmov2.collections_cache';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'collections_cache';
 
     public $timestamps = false;
 

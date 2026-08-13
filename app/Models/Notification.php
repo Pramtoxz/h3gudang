@@ -10,7 +10,9 @@ class Notification extends Model
 {
     use HasFactory;
 
-    protected $table = 'pmov2.notifikasi';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'notifikasi';
 
     protected $fillable = [
         'kd_toko',

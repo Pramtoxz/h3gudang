@@ -23,10 +23,46 @@ export interface NavItem {
     items?: NavItem[];
 }
 
+export interface Project {
+    id: number;
+    kode: string;
+    nama: string;
+    keterangan: string | null;
+    ikon: string | null;
+    url_awal: string | null;
+}
+
+export interface MenuNavigasi {
+    id: number;
+    nama_menu: string;
+    ikon: string | null;
+    route: string | null;
+    url: string | null;
+    children?: MenuNavigasi[];
+}
+
+export interface PesanFlash {
+    success?: string | null;
+    error?: string | null;
+    info?: string | null;
+}
+
+export interface IzinAksi {
+    lihat: boolean;
+    tambah: boolean;
+    ubah: boolean;
+    hapus: boolean;
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    menus: MenuNavigasi[];
+    projects: Project[];
+    projectAktif: string | null;
+    izin: IzinAksi;
+    flash: PesanFlash;
     sidebarOpen: boolean;
     [key: string]: unknown;
 }
@@ -36,9 +72,10 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
-    email_verified_at: string | null;
+    is_it?: boolean;
+    email_verified_at?: string | null;
     two_factor_enabled?: boolean;
-    created_at: string;
-    updated_at: string;
+    created_at?: string;
+    updated_at?: string;
     [key: string]: unknown; // This allows for additional properties...
 }

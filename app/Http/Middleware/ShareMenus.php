@@ -2,36 +2,33 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Menu;
+use App\Models\AdminUser;
+use App\Services\NavigasiService;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class ShareMenus
 {
+    public function __construct(private readonly NavigasiService $navigasiService)
+    {
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check()) {
-            $user = auth()->user();
-            $roles = $user->getRoles();
+        $user = Auth::user();
 
-            if (empty($roles)) {
-                Inertia::share('menus', collect());
-            } else {
-                $menus = Menu::where('status_aktif', true)
-                    ->whereNull('parent_id')
-                    ->whereHas('menuRole', fn ($q) => $q->whereIn('role', $roles))
-                    ->with(['children' => function ($query) use ($roles) {
-                        $query->where('status_aktif', true)
-                            ->whereHas('menuRole', fn ($q) => $q->whereIn('role', $roles))
-                            ->orderBy('urutan');
-                    }])
-                    ->orderBy('urutan')
-                    ->get();
+        if ($user instanceof AdminUser) {
+            $project = TentukanProjectAktif::dariRequest($request);
 
-                Inertia::share('menus', $menus);
-            }
+            Inertia::share([
+                'menus' => $this->navigasiService->menuUntuk($user, $project?->id),
+                'projects' => $this->navigasiService->projectUntuk($user),
+                'projectAktif' => $project?->kode,
+                'izin' => $this->navigasiService->izinUntuk($user, $request->route()?->getName()),
+            ]);
         }
 
         return $next($request);

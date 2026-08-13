@@ -9,7 +9,9 @@ class Campaign extends Model
 {
     use HasFactory;
 
-    protected $table = 'pmov2.kampanye';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'kampanye';
 
     protected $fillable = [
         'judul',

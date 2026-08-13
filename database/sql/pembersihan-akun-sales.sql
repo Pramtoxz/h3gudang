@@ -1,6 +1,14 @@
 -- =============================================================
 -- Pembersihan akun sales/supervisor di pmov2.users
--- Dijalankan manual di Navicat. Target: database `tools`, schema `pmov2`
+-- Dijalankan manual di Navicat.
+-- Target: koneksi `pgsql_pmo` -> database `menara_agung_live`, schema `pmov2`.
+--
+-- Diaudit ulang terhadap target itu pada 2026-08-13, hasilnya:
+--   A = 19 akun (0 punya PIN aktif) · B = 18 akun · C = 2 akun
+--   keranjang ikut terhapus = 0 · token ikut terhapus = 3 · relasi nyasar = 0
+--
+-- ⚠️ BAGIAN 3 TIDAK PERLU DIJALANKAN di database ini — query 1e menghasilkan
+--    0 baris, kasus MTO1/'DIV' tidak ada di sini.
 --
 -- Prinsip: sales & supervisor HANYA hidup di tabel pmov2.sales_supervisor.
 -- Relasi toko -> sales berjalan lewat tbltoko.fk_sales / fk_spv -> kode_npk.

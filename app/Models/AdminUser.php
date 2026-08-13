@@ -25,11 +25,6 @@ class AdminUser extends Authenticatable
         ];
     }
 
-    public function getRoles(): array
-    {
-        return $this->isIt() ? ['IT'] : [];
-    }
-
     public function isIt(): bool
     {
         return in_array($this->attributes['it'] ?? null, ['t', '1', 1, true], true);

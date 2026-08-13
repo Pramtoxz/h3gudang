@@ -12,7 +12,9 @@ class Cart extends Model
 {
     use HasFactory;
 
-    protected $table = 'pmov2.keranjang';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'keranjang';
 
     protected $fillable = [
         'user_id',

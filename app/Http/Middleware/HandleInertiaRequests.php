@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AdminUser;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -26,7 +27,7 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'roles' => $user->getRoles(),
+                    'is_it' => $user instanceof AdminUser && $user->isIt(),
                 ] : null,
             ],
             'flash' => [

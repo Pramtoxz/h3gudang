@@ -12,9 +12,9 @@ class Toko extends Model
 {
     use HasFactory;
 
-    protected $connection = 'pgsql';
+    protected $connection = 'pgsql_pmo';
 
-    protected $table = 'pmov2.tbltoko';
+    protected $table = 'tbltoko';
 
     protected $primaryKey = 'kd_toko';
 

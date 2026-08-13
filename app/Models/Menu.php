@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Menu extends Model
 {
+    protected $table = 'menus';
+
     protected $fillable = [
+        'project_id',
         'nama_menu',
         'ikon',
         'route',
@@ -16,11 +20,21 @@ class Menu extends Model
         'parent_id',
         'urutan',
         'status_aktif',
+        'khusus_it',
     ];
 
-    protected $casts = [
-        'status_aktif' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'status_aktif' => 'boolean',
+            'khusus_it' => 'boolean',
+        ];
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
 
     public function parent(): BelongsTo
     {
@@ -32,8 +46,23 @@ class Menu extends Model
         return $this->hasMany(Menu::class, 'parent_id')->orderBy('urutan');
     }
 
-    public function menuRole(): HasMany
+    public function akses(): HasMany
     {
-        return $this->hasMany(MenuRole::class, 'menu_id');
+        return $this->hasMany(MenuAkses::class);
+    }
+
+    /**
+     * Menu dengan project_id kosong berlaku lintas project.
+     */
+    public function scopeUntukProject(Builder $query, ?int $projectId): Builder
+    {
+        return $query->where(fn (Builder $q) => $q
+            ->whereNull('project_id')
+            ->orWhere('project_id', $projectId));
+    }
+
+    public function scopeAktif(Builder $query): Builder
+    {
+        return $query->where('status_aktif', true);
     }
 }

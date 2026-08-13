@@ -2,9 +2,11 @@
 
 use App\Http\Middleware\CheckMenuAccess;
 use App\Http\Middleware\EnsureUserHasShop;
+use App\Http\Middleware\EnsureUserIsIt;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ShareMenus;
+use App\Http\Middleware\TentukanProjectAktif;
 use App\Http\Middleware\VerifyCollectionPin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -25,12 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
+            TentukanProjectAktif::class,
             ShareMenus::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->alias([
             'check.menu.access' => CheckMenuAccess::class,
+            'user.is.it' => EnsureUserIsIt::class,
             'verify.collection.pin' => VerifyCollectionPin::class,
             'user.has.shop' => EnsureUserHasShop::class,
         ]);

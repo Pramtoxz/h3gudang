@@ -1,76 +1,37 @@
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
+import { NavUser } from '@/components/nav-user';
+import { ProjectSwitcher } from '@/components/project-switcher';
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
+    SidebarRail,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes/admin';
-import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
-import AppLogo from './app-logo';
+import { type SharedData } from '@/types';
+import { usePage } from '@inertiajs/react';
+import type * as React from 'react';
 
-const footerNavItems: NavItem[] = [
-    // {
-    //     title: 'Repository',
-    //     href: 'https://github.com/laravel/react-starter-kit',
-    //     icon: Folder,
-    // },
-    // {
-    //     title: 'Documentation',
-    //     href: 'https://laravel.com/docs/starter-kits#react',
-    //     icon: BookOpen,
-    // },
-];
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const { auth, menus, projects, projectAktif } = usePage<SharedData>().props;
 
-export function AppSidebar() {
-    const { menus } = usePage().props as any;
-
-    const mainNavItems: NavItem[] = menus?.map((menu: any) => {
-        const IconComponent = (LucideIcons as any)[menu.ikon] || LucideIcons.Circle;
-        
-        return {
-            title: menu.nama_menu,
-            href: menu.url || '#',
-            icon: IconComponent,
-            items: menu.children?.map((child: any) => {
-                const ChildIcon = (LucideIcons as any)[child.ikon] || LucideIcons.Circle;
-                return {
-                    title: child.nama_menu,
-                    href: child.url || '#',
-                    icon: ChildIcon,
-                };
-            }),
-        };
-    }) || [];
+    const menuProject = menus.filter((menu) => menu.nama_menu !== 'Pengaturan');
+    const menuPengaturan = menus.filter((menu) => menu.nama_menu === 'Pengaturan');
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+                <ProjectSwitcher projects={projects ?? []} projectAktif={projectAktif} />
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain menus={menuProject} />
+                {menuPengaturan.length > 0 && <NavMain menus={menuPengaturan} label="Sistem" />}
             </SidebarContent>
 
-            <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
-            </SidebarFooter>
+            <SidebarFooter>{auth?.user && <NavUser user={auth.user} />}</SidebarFooter>
+
+            <SidebarRail />
         </Sidebar>
     );
 }

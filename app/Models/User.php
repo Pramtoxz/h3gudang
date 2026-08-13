@@ -14,7 +14,7 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $connection = 'pgsql';
+    protected $connection = 'pgsql_pmo';
 
     protected $fillable = [
         'name',

@@ -1,22 +1,44 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\SalesSpvController;
-use App\Http\Controllers\Admin\SalesSpvExcelController;
-use App\Http\Controllers\Admin\TokoController;
-use App\Http\Controllers\Admin\TokoExcelController;
-use App\Http\Controllers\Admin\TokoPinController;
 use App\Http\Controllers\LoginController;
-use App\Http\Controllers\MenuController;
+use App\Http\Controllers\Pengaturan\HakAksesController;
+use App\Http\Controllers\Pengaturan\MenuController;
+use App\Http\Controllers\Picking\ChannelController;
+use App\Http\Controllers\Pmo\DashboardController;
+use App\Http\Controllers\Pmo\SalesSpvController;
+use App\Http\Controllers\Pmo\SalesSpvExcelController;
+use App\Http\Controllers\Pmo\TokoController;
+use App\Http\Controllers\Pmo\TokoExcelController;
+use App\Http\Controllers\Pmo\TokoPinController;
+use App\Http\Middleware\TentukanProjectAktif;
+use App\Models\AdminUser;
+use App\Services\NavigasiService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    if (Auth::check()) {
-        return redirect()->route('admin.dashboard');
+Route::get('/', function (Request $request, NavigasiService $navigasi) {
+    $user = Auth::user();
+
+    if (! $user instanceof AdminUser) {
+        return redirect()->route('login');
     }
 
-    return redirect()->route('login');
+    $project = collect($navigasi->projectUntuk($user));
+
+    if ($project->isEmpty()) {
+        abort(403, 'Belum ada project yang bisa Anda buka.');
+    }
+
+    $terakhir = TentukanProjectAktif::kodeTerakhir($request);
+    $tujuan = $project->firstWhere('kode', $terakhir) ?? $project->first();
+    $url = $navigasi->urlAwal($user, $tujuan['id']);
+
+    if (! $url) {
+        abort(403, 'Belum ada menu yang bisa Anda buka.');
+    }
+
+    return redirect($url);
 })->name('home');
 
 Route::middleware('guest')->group(function () {
@@ -28,8 +50,10 @@ Route::post('/logout', [LoginController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-Route::middleware(['auth', 'check.menu.access'])->group(function () {
-    Route::prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'check.menu.access'])
+    ->prefix('pmo')
+    ->name('pmo.')
+    ->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::prefix('toko')->name('toko.')->group(function () {
@@ -54,8 +78,27 @@ Route::middleware(['auth', 'check.menu.access'])->group(function () {
         });
     });
 
-    Route::get('settings/menus', [MenuController::class, 'index'])->name('settings.menus.index');
-    Route::post('settings/menus', [MenuController::class, 'store'])->name('settings.menus.store');
-    Route::put('settings/menus/{id}', [MenuController::class, 'update'])->name('settings.menus.update');
-    Route::delete('settings/menus/{id}', [MenuController::class, 'destroy'])->name('settings.menus.destroy');
-});
+Route::middleware(['auth', 'check.menu.access'])
+    ->prefix('picking')
+    ->name('picking.')
+    ->group(function () {
+        Route::prefix('channel')->name('channel.')->group(function () {
+            Route::get('/', [ChannelController::class, 'index'])->name('index');
+            Route::post('/', [ChannelController::class, 'store'])->name('store');
+            Route::put('{channel}', [ChannelController::class, 'update'])->name('update');
+            Route::delete('{channel}', [ChannelController::class, 'destroy'])->name('destroy');
+        });
+    });
+
+Route::middleware(['auth', 'user.is.it'])
+    ->prefix('pengaturan')
+    ->name('pengaturan.')
+    ->group(function () {
+        Route::get('menu', [MenuController::class, 'index'])->name('menu.index');
+        Route::post('menu', [MenuController::class, 'store'])->name('menu.store');
+        Route::put('menu/{menu}', [MenuController::class, 'update'])->name('menu.update');
+        Route::delete('menu/{menu}', [MenuController::class, 'destroy'])->name('menu.destroy');
+
+        Route::get('hak-akses', [HakAksesController::class, 'index'])->name('hak-akses.index');
+        Route::put('hak-akses', [HakAksesController::class, 'update'])->name('hak-akses.update');
+    });

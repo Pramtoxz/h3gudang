@@ -2,57 +2,37 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AdminUser;
+use App\Services\NavigasiService;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckMenuAccess
 {
+    public function __construct(private readonly NavigasiService $navigasiService)
+    {
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+        $user = Auth::user();
 
-        if (!$user) {
-            abort(403, 'Unauthorized access.');
-        }
-
-        $roles = $user->getRoles();
-
-        if (empty($roles)) {
+        if (! $user instanceof AdminUser) {
             abort(403, 'Anda tidak memiliki akses.');
         }
 
-        $routeName = $request->route()?->getName();
+        $namaRoute = $request->route()?->getName();
 
-        if (!$routeName) {
+        if (! $namaRoute) {
             return $next($request);
         }
 
-        $hasAccess = DB::table('menus')
-            ->join('menu_role', 'menus.id', '=', 'menu_role.menu_id')
-            ->whereIn('menu_role.role', $roles)
-            ->where('menus.status_aktif', true)
-            ->where('menus.route', 'like', $this->prefixModul($routeName) . '%')
-            ->exists();
-
-        if (!$hasAccess) {
+        if (! $this->navigasiService->bolehMembuka($user, $namaRoute, $request->method())) {
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }
 
         return $next($request);
-    }
-
-    /**
-     * Nama route admin berbentuk `admin.<modul>.<aksi>`, sehingga hak akses
-     * diukur pada dua segmen pertama agar berlaku per modul, bukan per aplikasi.
-     */
-    private function prefixModul(string $routeName): string
-    {
-        $segmen = explode('.', $routeName);
-
-        return count($segmen) > 2
-            ? $segmen[0] . '.' . $segmen[1]
-            : $routeName;
     }
 }

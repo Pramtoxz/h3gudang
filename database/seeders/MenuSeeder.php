@@ -2,73 +2,101 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Menu;
-use App\Models\MenuRole;
+use App\Models\Project;
+use Illuminate\Database\Seeder;
 
+/**
+ * Menu dicocokkan lewat kolom `route` yang unik, bukan id, supaya seeder ini
+ * tetap benar meski dijalankan ulang di atas data yang sudah ada.
+ */
 class MenuSeeder extends Seeder
 {
+    private const MENU_PMO = [
+        ['Dashboard', 'LayoutDashboard', 'pmo.dashboard', '/pmo/dashboard', 1],
+        ['Kelola Toko', 'Store', 'pmo.toko.index', '/pmo/toko', 2],
+        ['Sales Supervisor', 'UsersRound', 'pmo.sales-spv.index', '/pmo/sales-spv', 3],
+        ['Campaign', 'Megaphone', 'pmo.campaigns.index', '/pmo/campaigns', 4],
+        ['Katalog Motor', 'BookOpen', 'pmo.katalog.index', '/pmo/katalog', 5],
+        ['Gambar Kategori Part', 'Images', 'pmo.category-images.index', '/pmo/category-images', 6],
+        ['Part Populer', 'Star', 'pmo.popular-parts.index', '/pmo/popular-parts', 7],
+        ['Notifikasi', 'Bell', 'pmo.notifications.index', '/pmo/notifications', 8],
+    ];
+
+    private const MENU_PICKING = [
+        ['Master Channel', 'Building2', 'picking.channel.index', '/picking/channel', 10],
+    ];
+
+    private const MENU_PENGATURAN = [
+        ['Kelola Menu', 'List', 'pengaturan.menu.index', '/pengaturan/menu', 1],
+        ['Kelola Hak Akses', 'ShieldCheck', 'pengaturan.hak-akses.index', '/pengaturan/hak-akses', 2],
+    ];
+
     public function run(): void
     {
-        MenuRole::query()->delete();
-        Menu::query()->delete();
+        $this->menuProject('pmo', self::MENU_PMO);
+        $this->menuProject('picking', self::MENU_PICKING);
+        $this->menuPengaturan();
+    }
 
-        $menus = [
+    private function menuProject(string $kodeProject, array $daftar): void
+    {
+        $project = Project::query()->where('kode', $kodeProject)->first();
+
+        if (! $project) {
+            return;
+        }
+
+        foreach ($daftar as [$nama, $ikon, $route, $url, $urutan]) {
+            Menu::query()->updateOrCreate(
+                ['route' => $route],
+                [
+                    'project_id' => $project->id,
+                    'nama_menu' => $nama,
+                    'ikon' => $ikon,
+                    'url' => $url,
+                    'parent_id' => null,
+                    'urutan' => $urutan,
+                    'status_aktif' => true,
+                    'khusus_it' => false,
+                ],
+            );
+        }
+    }
+
+    /**
+     * Grup Pengaturan memakai project_id NULL supaya tampil di project mana pun,
+     * dan khusus_it supaya tidak pernah bisa dicentangkan ke user biasa.
+     */
+    private function menuPengaturan(): void
+    {
+        $induk = Menu::query()->firstOrCreate(
+            ['nama_menu' => 'Pengaturan', 'parent_id' => null],
             [
-                'nama_menu' => 'Dashboard',
-                'ikon' => 'LayoutDashboard',
-                'route' => 'dashboard',
-                'url' => '/dashboard',
-                'parent_id' => null,
-                'urutan' => 1,
-                'status_aktif' => true,
-                'roles' => ['Admin'],
-            ],
-            [
-                'nama_menu' => 'Pengaturan',
+                'project_id' => null,
                 'ikon' => 'Settings',
                 'route' => null,
                 'url' => null,
-                'parent_id' => null,
-                'urutan' => 2,
+                'urutan' => 99,
                 'status_aktif' => true,
-                'roles' => ['Admin'],
-                'children' => [
-                    [
-                        'nama_menu' => 'Menu Management',
-                        'ikon' => 'ListTree',
-                        'route' => 'settings.menus.index',
-                        'url' => '/settings/menus',
-                        'urutan' => 1,
-                        'status_aktif' => true,
-                        'roles' => ['Admin'],
-                    ],
-                ],
+                'khusus_it' => true,
             ],
-        ];
+        );
 
-        foreach ($menus as $menuData) {
-            $children = $menuData['children'] ?? [];
-            $roles = $menuData['roles'];
-            unset($menuData['children'], $menuData['roles']);
-
-            $parent = Menu::create($menuData);
-
-            foreach ($roles as $role) {
-                MenuRole::create(['menu_id' => $parent->id, 'role' => $role]);
-            }
-
-            foreach ($children as $childData) {
-                $childRoles = $childData['roles'];
-                unset($childData['roles']);
-                $childData['parent_id'] = $parent->id;
-
-                $child = Menu::create($childData);
-
-                foreach ($childRoles as $role) {
-                    MenuRole::create(['menu_id' => $child->id, 'role' => $role]);
-                }
-            }
+        foreach (self::MENU_PENGATURAN as [$nama, $ikon, $route, $url, $urutan]) {
+            Menu::query()->updateOrCreate(
+                ['route' => $route],
+                [
+                    'project_id' => null,
+                    'nama_menu' => $nama,
+                    'ikon' => $ikon,
+                    'url' => $url,
+                    'parent_id' => $induk->id,
+                    'urutan' => $urutan,
+                    'status_aktif' => true,
+                    'khusus_it' => true,
+                ],
+            );
         }
     }
 }

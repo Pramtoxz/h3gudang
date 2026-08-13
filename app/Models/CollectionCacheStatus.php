@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class CollectionCacheStatus extends Model
 {
-    protected $table = 'pmov2.collection_cache_status';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'collection_cache_status';
 
     protected $fillable = [
         'status',

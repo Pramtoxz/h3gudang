@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminUser;
+use App\Services\NavigasiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -9,6 +11,10 @@ use Inertia\Response;
 
 class LoginController extends Controller
 {
+    public function __construct(private readonly NavigasiService $navigasiService)
+    {
+    }
+
     public function create(): Response
     {
         return Inertia::render('auth/login');
@@ -33,15 +39,17 @@ class LoginController extends Controller
         if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $request->boolean('remember'))) {
             $user = Auth::user();
 
-            if (empty($user->getRoles())) {
+            if (! $user instanceof AdminUser || ! $this->navigasiService->punyaAkses($user)) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
+
                 return back()->with('error', 'Anda tidak punya hak untuk akses ini');
             }
 
             $request->session()->regenerate();
-            return redirect()->intended(route('admin.dashboard'));
+
+            return redirect()->intended(route('home'));
         }
 
         return back()->withErrors([

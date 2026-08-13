@@ -14,7 +14,7 @@ class SalesSupervisorRepository
      */
     public function barisExport(): array
     {
-        return DB::connection('pgsql')->select("
+        return DB::connection('pgsql_pmo')->select("
             SELECT
                 ss.nama,
                 COALESCE(u.email, '') AS email,
@@ -40,6 +40,6 @@ class SalesSupervisorRepository
 
     private function tabel(): Builder
     {
-        return DB::connection('pgsql')->table('pmov2.sales_supervisor');
+        return DB::connection('pgsql_pmo')->table('pmov2.sales_supervisor');
     }
 }

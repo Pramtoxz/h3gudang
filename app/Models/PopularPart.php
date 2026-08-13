@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PopularPart extends Model
 {
-    protected $table = 'pmov2.part_populer';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'part_populer';
 
     protected $fillable = [
         'kode_part',

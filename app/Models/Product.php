@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    protected $table = 'pmov2.gambar_part';
+    protected $connection = 'pgsql_pmo';
+
+    protected $table = 'gambar_part';
 
     protected $primaryKey = 'kode_part';
 
