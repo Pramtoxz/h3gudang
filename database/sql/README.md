@@ -47,6 +47,7 @@ php artisan db:seed
 | Berkas | Kapan dipakai |
 |---|---|
 | [`00-SETUP-WAREHOUSE.sql`](00-SETUP-WAREHOUSE.sql) | Membuat schema `warehouse`. Juga memuat blok opsional untuk memindahkan `menu_akses` lama dari `pmov2` dan membersihkan sisa tabel sistem di sana |
+| [`perbaikan-sequence-h3.sql`](perbaikan-sequence-h3.sql) | ⏳ **Perlu dijalankan.** `tbl_picking_inoma_id_seq` (616) dan `kartustok_id_seq` (2) tertinggal jauh di belakang `MAX(id)` (56.533 dan 61.683) di `dms_clone`, sehingga **setiap INSERT baru ditolak**. Tanpa ini sinkronisasi DO tidak bisa jalan di dev. Cek juga di `dmsv2` sebelum cutover |
 | [`pembersihan-akun-sales.sql`](pembersihan-akun-sales.sql) | Sekali saja, membersihkan anomali 39 akun sales/supervisor di `pmov2.users`. **Belum pernah dijalankan.** Dari 39 akun bermasalah, 18 di antaranya JANGAN dihapus — itu user toko yang rolenya salah dan sedang aktif belanja, cukup diubah jadi dealer |
 | ~~`menu-pmo.sql`~~ | **Jangan dijalankan.** Digantikan migration. Disimpan sebagai rujukan sejarah |
 | ~~`izin-per-aksi.sql`~~ | **Jangan dijalankan.** Kolom izinnya sudah masuk migration `create_menu_akses_table` |

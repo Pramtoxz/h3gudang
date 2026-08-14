@@ -20,6 +20,7 @@ class NavigasiService
         'edit' => 'boleh_ubah',
         'update' => 'boleh_ubah',
         'destroy' => 'boleh_hapus',
+        'destroy-massal' => 'boleh_hapus',
     ];
 
     /**

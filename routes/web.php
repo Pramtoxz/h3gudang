@@ -3,7 +3,10 @@
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\Pengaturan\HakAksesController;
 use App\Http\Controllers\Pengaturan\MenuController;
+use App\Http\Controllers\Picking\AksesAreaController;
 use App\Http\Controllers\Picking\ChannelController;
+use App\Http\Controllers\Picking\LoginLapanganController;
+use App\Http\Controllers\Picking\LokasiRakController;
 use App\Http\Controllers\Pmo\DashboardController;
 use App\Http\Controllers\Pmo\SalesSpvController;
 use App\Http\Controllers\Pmo\SalesSpvExcelController;
@@ -44,6 +47,13 @@ Route::get('/', function (Request $request, NavigasiService $navigasi) {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+
+    Route::prefix('picking/lapangan')->name('picking.lapangan.')->group(function () {
+        Route::get('masuk', [LoginLapanganController::class, 'create'])->name('masuk');
+        Route::post('masuk', [LoginLapanganController::class, 'store'])
+            ->middleware('throttle:login-lapangan')
+            ->name('proses-masuk');
+    });
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])
@@ -87,6 +97,21 @@ Route::middleware(['auth', 'check.menu.access'])
             Route::post('/', [ChannelController::class, 'store'])->name('store');
             Route::put('{channel}', [ChannelController::class, 'update'])->name('update');
             Route::delete('{channel}', [ChannelController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('lokasi-rak')->name('lokasi-rak.')->group(function () {
+            Route::get('/', [LokasiRakController::class, 'index'])->name('index');
+            Route::post('/', [LokasiRakController::class, 'store'])->name('store');
+            Route::delete('massal', [LokasiRakController::class, 'destroyMassal'])->name('destroy-massal');
+            Route::put('{lokasiRak}', [LokasiRakController::class, 'update'])->name('update');
+            Route::delete('{lokasiRak}', [LokasiRakController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('akses-area')->name('akses-area.')->group(function () {
+            Route::get('/', [AksesAreaController::class, 'index'])->name('index');
+            Route::post('/', [AksesAreaController::class, 'store'])->name('store');
+            Route::put('{aksesArea}', [AksesAreaController::class, 'update'])->name('update');
+            Route::delete('{aksesArea}', [AksesAreaController::class, 'destroy'])->name('destroy');
         });
     });
 

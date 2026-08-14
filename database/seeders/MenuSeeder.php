@@ -25,6 +25,8 @@ class MenuSeeder extends Seeder
 
     private const MENU_PICKING = [
         ['Master Channel', 'Building2', 'picking.channel.index', '/picking/channel', 10],
+        ['Master Lokasi Rak', 'MapPin', 'picking.lokasi-rak.index', '/picking/lokasi-rak', 11],
+        ['Master Akses Area', 'UserCog', 'picking.akses-area.index', '/picking/akses-area', 12],
     ];
 
     private const MENU_PENGATURAN = [

@@ -21,16 +21,31 @@ class ShareMenus
         $user = Auth::user();
 
         if ($user instanceof AdminUser) {
-            $project = TentukanProjectAktif::dariRequest($request);
+            $daftarProject = $this->navigasiService->projectUntuk($user);
+            $konteks = $this->projectKonteks($request, $daftarProject);
 
             Inertia::share([
-                'menus' => $this->navigasiService->menuUntuk($user, $project?->id),
-                'projects' => $this->navigasiService->projectUntuk($user),
-                'projectAktif' => $project?->kode,
+                'menus' => $this->navigasiService->menuUntuk($user, $konteks['id'] ?? null),
+                'projects' => $daftarProject,
+                'projectAktif' => $konteks['kode'] ?? null,
                 'izin' => $this->navigasiService->izinUntuk($user, $request->route()?->getName()),
             ]);
         }
 
         return $next($request);
+    }
+
+    private function projectKonteks(Request $request, array $daftarProject): ?array
+    {
+        $kode = TentukanProjectAktif::dariRequest($request)?->kode
+            ?? TentukanProjectAktif::kodeTerakhir($request);
+
+        foreach ($daftarProject as $project) {
+            if ($project['kode'] === $kode) {
+                return $project;
+            }
+        }
+
+        return $daftarProject[0] ?? null;
     }
 }

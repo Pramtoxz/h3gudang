@@ -1,6 +1,7 @@
 import {
     Pagination,
     PaginationContent,
+    PaginationEllipsis,
     PaginationItem,
     PaginationLink,
     PaginationNext,
@@ -13,6 +14,40 @@ interface PaginasiTabelProps {
     totalData: number;
     perHalaman: number;
     onPindah: (halaman: number) => void;
+}
+
+const RENTANG = 1;
+const TANPA_ELIPSIS = 7;
+
+/**
+ * Nomor yang ditampilkan dijaga maksimal tujuh slot supaya lebarnya tetap sama
+ * baik untuk 3 halaman maupun 97 halaman.
+ */
+function daftarNomor(halaman: number, totalHalaman: number): (number | 'elipsis')[] {
+    if (totalHalaman <= TANPA_ELIPSIS) {
+        return Array.from({ length: totalHalaman }, (_, indeks) => indeks + 1);
+    }
+
+    const awal = Math.max(2, Math.min(halaman - RENTANG, totalHalaman - 2 * RENTANG - 2));
+    const akhir = Math.min(totalHalaman - 1, Math.max(halaman + RENTANG, 2 * RENTANG + 3));
+
+    const nomor: (number | 'elipsis')[] = [1];
+
+    if (awal > 2) {
+        nomor.push('elipsis');
+    }
+
+    for (let angka = awal; angka <= akhir; angka++) {
+        nomor.push(angka);
+    }
+
+    if (akhir < totalHalaman - 1) {
+        nomor.push('elipsis');
+    }
+
+    nomor.push(totalHalaman);
+
+    return nomor;
 }
 
 export function PaginasiTabel({
@@ -49,25 +84,40 @@ export function PaginasiTabel({
                             />
                         </PaginationItem>
 
-                        {Array.from({ length: totalHalaman }, (_, indeks) => indeks + 1).map((nomor) => (
-                            <PaginationItem key={nomor} className="hidden sm:inline-block">
-                                <PaginationLink
-                                    href="#"
-                                    isActive={nomor === halaman}
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        onPindah(nomor);
-                                    }}
-                                >
-                                    {nomor}
-                                </PaginationLink>
+                        {daftarNomor(halaman, totalHalaman).map((nomor, indeks) => (
+                            <PaginationItem
+                                key={nomor === 'elipsis' ? `elipsis-${indeks}` : nomor}
+                                className="hidden sm:inline-block"
+                            >
+                                {nomor === 'elipsis' ? (
+                                    <PaginationEllipsis />
+                                ) : (
+                                    <PaginationLink
+                                        href="#"
+                                        isActive={nomor === halaman}
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            onPindah(nomor);
+                                        }}
+                                    >
+                                        {nomor}
+                                    </PaginationLink>
+                                )}
                             </PaginationItem>
                         ))}
+
+                        <PaginationItem className="sm:hidden">
+                            <span className="text-muted-foreground px-2 text-xs">
+                                Hal. {halaman} / {totalHalaman}
+                            </span>
+                        </PaginationItem>
 
                         <PaginationItem>
                             <PaginationNext
                                 href="#"
-                                className={halaman >= totalHalaman ? 'pointer-events-none opacity-50' : ''}
+                                className={
+                                    halaman >= totalHalaman ? 'pointer-events-none opacity-50' : ''
+                                }
                                 onClick={(event) => {
                                     event.preventDefault();
                                     if (halaman < totalHalaman) onPindah(halaman + 1);

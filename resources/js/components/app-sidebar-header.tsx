@@ -1,16 +1,9 @@
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import { UserInfo } from '@/components/user-info';
-import { UserMenuContent } from '@/components/user-menu-content';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { type BreadcrumbItem as BreadcrumbItemType, type SharedData } from '@/types';
+import {
+    type BreadcrumbItem as BreadcrumbItemType,
+    type SharedData,
+} from '@/types';
 import { usePage } from '@inertiajs/react';
-import { ChevronsUpDown } from 'lucide-react';
 
 export function AppSidebarHeader({
     breadcrumbs = [],
@@ -21,15 +14,16 @@ export function AppSidebarHeader({
     const isMobile = useIsMobile();
 
     return (
-        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
-            <div className="flex items-center gap-2">
+        // <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
+        <header>
+            {/* <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
-            </div>
+            </div> */}
 
-            <DropdownMenu>
+            {/* <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-sidebar-accent transition-colors">
+                    <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-sidebar-accent">
                         <UserInfo user={auth.user} showEmail={false} />
                         <ChevronsUpDown className="size-4 text-muted-foreground" />
                     </button>
@@ -41,7 +35,7 @@ export function AppSidebarHeader({
                 >
                     <UserMenuContent user={auth.user} />
                 </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu> */}
         </header>
     );
 }

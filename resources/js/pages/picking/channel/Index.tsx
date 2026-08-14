@@ -11,6 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
     Table,
     TableBody,
@@ -33,7 +34,9 @@ interface Props {
     daftarArea: string[];
 }
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Master Channel', href: index().url }];
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Master Channel', href: index().url },
+];
 
 const PER_HALAMAN = 20;
 const SEMUA_AREA = 'semua';
@@ -71,7 +74,10 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
         });
     }, [daftarChannel, pencarian, area]);
 
-    const totalHalaman = Math.max(1, Math.ceil(hasilSaring.length / PER_HALAMAN));
+    const totalHalaman = Math.max(
+        1,
+        Math.ceil(hasilSaring.length / PER_HALAMAN),
+    );
     const halamanAktif = Math.min(halaman, totalHalaman);
     const awalBaris = (halamanAktif - 1) * PER_HALAMAN;
 
@@ -116,14 +122,18 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Master Channel" />
-
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <Card>
                     <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <CardTitle className="text-base">Master Channel</CardTitle>
-                            <p className="text-muted-foreground text-sm">
-                                {daftarChannel.length} channel pada {daftarArea.length} area
+                            <CardTitle className="text-base">
+                                <SidebarTrigger className="-ml-1" />
+                                Master Channel
+                            </CardTitle>
+
+                            <p className="text-sm text-muted-foreground">
+                                {daftarChannel.length} channel pada{' '}
+                                {daftarArea.length} area
                             </p>
                         </div>
                         {izin.tambah && (
@@ -137,10 +147,12 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
                     <CardContent className="space-y-3">
                         <div className="flex flex-col gap-2 sm:flex-row">
                             <div className="relative sm:max-w-sm sm:flex-1">
-                                <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+                                <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     value={pencarian}
-                                    onChange={(event) => cari(event.target.value)}
+                                    onChange={(event) =>
+                                        cari(event.target.value)
+                                    }
                                     placeholder="Cari kode, nama channel, atau invoice"
                                     className="pl-8"
                                 />
@@ -150,7 +162,9 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={SEMUA_AREA}>Semua area</SelectItem>
+                                    <SelectItem value={SEMUA_AREA}>
+                                        Semua area
+                                    </SelectItem>
                                     {daftarArea.map((nama) => (
                                         <SelectItem key={nama} value={nama}>
                                             {nama}
@@ -164,12 +178,16 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-14 text-center">No.</TableHead>
+                                        <TableHead className="w-14 text-center">
+                                            No.
+                                        </TableHead>
                                         <TableHead>Area</TableHead>
                                         <TableHead>Kode</TableHead>
                                         <TableHead>Nama Channel</TableHead>
                                         <TableHead>Nama Invoice</TableHead>
-                                        <TableHead className="w-24 text-center">Aksi</TableHead>
+                                        <TableHead className="w-24 text-center">
+                                            Aksi
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -177,7 +195,7 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
                                         <TableRow>
                                             <TableCell
                                                 colSpan={6}
-                                                className="text-muted-foreground h-24 text-center"
+                                                className="h-24 text-center text-muted-foreground"
                                             >
                                                 {daftarChannel.length === 0
                                                     ? 'Belum ada data channel.'
@@ -187,11 +205,13 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
                                     ) : (
                                         barisHalamanIni.map((baris, indeks) => (
                                             <TableRow key={baris.id}>
-                                                <TableCell className="text-muted-foreground text-center text-xs tabular-nums">
+                                                <TableCell className="text-center text-xs text-muted-foreground tabular-nums">
                                                     {awalBaris + indeks + 1}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="secondary">{baris.area}</Badge>
+                                                    <Badge variant="secondary">
+                                                        {baris.area}
+                                                    </Badge>
                                                 </TableCell>
                                                 <TableCell className="font-mono text-xs">
                                                     {baris.kode_channel}
@@ -210,7 +230,11 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
                                                                 size="sm"
                                                                 className="h-8 w-8 p-0"
                                                                 title="Ubah"
-                                                                onClick={() => bukaUbah(baris)}
+                                                                onClick={() =>
+                                                                    bukaUbah(
+                                                                        baris,
+                                                                    )
+                                                                }
                                                             >
                                                                 <Pencil className="h-4 w-4" />
                                                             </Button>
@@ -219,18 +243,23 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                className="text-destructive h-8 w-8 p-0"
+                                                                className="h-8 w-8 p-0 text-destructive"
                                                                 title="Hapus"
-                                                                onClick={() => setAkanDihapus(baris)}
+                                                                onClick={() =>
+                                                                    setAkanDihapus(
+                                                                        baris,
+                                                                    )
+                                                                }
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
                                                         )}
-                                                        {!izin.ubah && !izin.hapus && (
-                                                            <span className="text-muted-foreground text-xs">
-                                                                —
-                                                            </span>
-                                                        )}
+                                                        {!izin.ubah &&
+                                                            !izin.hapus && (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    —
+                                                                </span>
+                                                            )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -264,8 +293,9 @@ export default function ChannelIndex({ daftarChannel, daftarArea }: Props) {
                 keterangan={
                     <>
                         Channel <strong>{akanDihapus?.kode_channel}</strong> (
-                        {akanDihapus?.nama_channel}) akan dihapus permanen. DO picking yang menunjuk
-                        kode ini tidak ikut terhapus, tetapi nama channelnya tidak lagi tampil.
+                        {akanDihapus?.nama_channel}) akan dihapus permanen. DO
+                        picking yang menunjuk kode ini tidak ikut terhapus,
+                        tetapi nama channelnya tidak lagi tampil.
                     </>
                 }
                 labelKonfirmasi="Hapus"

@@ -16,7 +16,7 @@ return [
 
     'providers' => [
         'admin_users' => [
-            'driver' => 'eloquent',
+            'driver' => 'admin_dms',
             'model' => App\Models\AdminUser::class,
         ],
 

@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AdminUser;
-use App\Services\NavigasiService;
+use App\Services\LoginAdminService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class LoginController extends Controller
 {
-    public function __construct(private readonly NavigasiService $navigasiService)
+    public function __construct(private readonly LoginAdminService $loginAdminService)
     {
     }
 
@@ -22,61 +22,52 @@ class LoginController extends Controller
 
     public function store(Request $request)
     {
-        $credentials = $request->validate([
+        $kredensial = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
             'recaptcha_token' => 'required|string',
         ]);
 
-        $recaptchaResponse = $this->verifyRecaptcha($credentials['recaptcha_token']);
-
-        if (!$recaptchaResponse['success']) {
+        if (! $this->recaptchaLolos($kredensial['recaptcha_token'])) {
             return back()->withErrors([
                 'email' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
             ])->onlyInput('email');
         }
 
-        if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $request->boolean('remember'))) {
-            $user = Auth::user();
+        $galat = $this->loginAdminService->masuk(
+            $request,
+            $kredensial['email'],
+            $kredensial['password'],
+            $request->boolean('remember'),
+        );
 
-            if (! $user instanceof AdminUser || ! $this->navigasiService->punyaAkses($user)) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                return back()->with('error', 'Anda tidak punya hak untuk akses ini');
-            }
-
-            $request->session()->regenerate();
-
-            return redirect()->intended(route('home'));
+        if ($galat !== null) {
+            return back()->withErrors(['email' => $galat])->onlyInput('email');
         }
 
-        return back()->withErrors([
-            'email' => 'Email atau password salah.',
-        ])->onlyInput('email');
-    }
-
-    private function verifyRecaptcha(string $token): array
-    {
-        try {
-            $response = \Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-                'secret' => config('services.recaptcha.secret_key'),
-                'response' => $token,
-            ]);
-
-            return $response->json();
-        } catch (\Exception $e) {
-            \Log::warning('reCAPTCHA verification failed: ' . $e->getMessage());
-            return ['success' => false];
-        }
+        return redirect()->intended(route('home'));
     }
 
     public function destroy(Request $request)
     {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $this->loginAdminService->keluar($request);
+
         return redirect('/');
+    }
+
+    private function recaptchaLolos(string $token): bool
+    {
+        try {
+            $tanggapan = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => config('services.recaptcha.secret_key'),
+                'response' => $token,
+            ]);
+
+            return (bool) ($tanggapan->json()['success'] ?? false);
+        } catch (\Exception $e) {
+            Log::warning('Verifikasi reCAPTCHA gagal: '.$e->getMessage());
+
+            return false;
+        }
     }
 }

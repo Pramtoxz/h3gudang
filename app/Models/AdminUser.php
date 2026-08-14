@@ -17,6 +17,10 @@ class AdminUser extends Authenticatable
         'remember_token',
     ];
 
+    private ?string $rememberTokenTersimpan = null;
+
+    private bool $rememberTokenSudahDiambil = false;
+
     protected function casts(): array
     {
         return [
@@ -31,15 +35,26 @@ class AdminUser extends Authenticatable
     }
 
     /**
-     * Koneksi pgsql_dms bersifat read-only, sehingga fitur "remember me"
-     * dimatikan agar Laravel tidak menulis remember_token ke database DMS.
+     * Remember token tidak boleh menyentuh DMS yang read-only, jadi nilainya
+     * hidup di `warehouse.admin_remember_tokens`. Yang menuliskannya ke sana
+     * adalah App\Auth\AdminUserProvider; di sini token hanya disimpan sementara
+     * supaya `SessionGuard` bisa membacanya kembali dalam request yang sama.
      */
     public function setRememberToken($value): void
     {
+        $this->rememberTokenTersimpan = $value;
+        $this->rememberTokenSudahDiambil = true;
     }
 
     public function getRememberToken(): ?string
     {
-        return null;
+        if (! $this->rememberTokenSudahDiambil) {
+            $this->rememberTokenTersimpan = AdminRememberToken::query()
+                ->where('email', $this->attributes['email'] ?? '')
+                ->value('token');
+            $this->rememberTokenSudahDiambil = true;
+        }
+
+        return $this->rememberTokenTersimpan;
     }
 }

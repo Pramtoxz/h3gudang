@@ -54,6 +54,14 @@ export interface IzinAksi {
     hapus: boolean;
 }
 
+export interface HalamanData<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
