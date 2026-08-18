@@ -7,6 +7,7 @@ use App\Http\Controllers\Picking\AksesAreaController;
 use App\Http\Controllers\Picking\ChannelController;
 use App\Http\Controllers\Picking\LoginLapanganController;
 use App\Http\Controllers\Picking\LokasiRakController;
+use App\Http\Controllers\Picking\PickingPartController;
 use App\Http\Controllers\Pmo\DashboardController;
 use App\Http\Controllers\Pmo\SalesSpvController;
 use App\Http\Controllers\Pmo\SalesSpvExcelController;
@@ -105,6 +106,12 @@ Route::middleware(['auth', 'check.menu.access'])
             Route::delete('massal', [LokasiRakController::class, 'destroyMassal'])->name('destroy-massal');
             Route::put('{lokasiRak}', [LokasiRakController::class, 'update'])->name('update');
             Route::delete('{lokasiRak}', [LokasiRakController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('picking-part')->name('picking-part.')->group(function () {
+            Route::get('/', [PickingPartController::class, 'index'])->name('index');
+            Route::post('sync', [PickingPartController::class, 'sync'])->name('sync');
+            Route::delete('/', [PickingPartController::class, 'destroy'])->name('destroy');
         });
 
         Route::prefix('akses-area')->name('akses-area.')->group(function () {
