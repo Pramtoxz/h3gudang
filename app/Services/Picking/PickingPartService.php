@@ -139,8 +139,8 @@ class PickingPartService
         $this->areaOperator->saring($query, $this->areaOperator->areaUntuk($user), 'p.lokasi_part');
 
         return $query
-            ->orderBy('p.fk_part')
             ->orderBy('p.lokasi_part')
+            ->orderBy('p.fk_part')
             ->get()
             ->map(fn (object $baris): array => [
                 'id' => (int) $baris->id,
