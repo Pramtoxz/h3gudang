@@ -112,6 +112,8 @@ Route::middleware(['auth', 'check.menu.access'])
             Route::get('/', [PickingPartController::class, 'index'])->name('index');
             Route::get('/{fkDo}/detail', [PickingPartController::class, 'detail'])->name('detail');
             Route::post('/update-status', [PickingPartController::class, 'updateStatus'])->name('update-status');
+            Route::post('/kartustok', [PickingPartController::class, 'kartustok'])->name('kartustok');
+            Route::delete('/items/{id}', [PickingPartController::class, 'hapusItem'])->name('hapus-item');
             Route::delete('/', [PickingPartController::class, 'destroy'])->name('destroy');
         });
 

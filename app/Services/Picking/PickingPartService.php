@@ -4,10 +4,12 @@ namespace App\Services\Picking;
 
 use App\Models\AdminUser;
 use App\Models\H3\AreaChannel;
+use App\Models\H3\KartuStock;
 use App\Models\H3\PickingInoma;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PickingPartService
 {
@@ -97,86 +99,203 @@ class PickingPartService
     }
 
     /**
-     * Ambil semua part dalam satu DO, urutkan per lokasi rak → part number.
-     * Data dari koneksi DMS read-only dan langsung ke tabel H3.
+     * Hapus satu baris item dari DO, apa pun statusnya. Meniru `deleteDOItemByAdmin()`.
+     */
+    public function hapusItem(int $id): int
+    {
+        return PickingInoma::query()->where('id', $id)->delete();
+    }
+
+    /**
+     * Semua part dalam satu DO, meniru `getDetailData()` aplikasi lama:
+     * join `tbl_area_channel` untuk nama channel dan `public.tblpart` untuk
+     * nama part. Urutan lama: part number lalu lokasi rak.
      */
     public function daftarPartDalamDo(AdminUser $user, string $fkDo): array
     {
         $query = DB::connection('pgsql_dms')
             ->table('H3.tbl_picking_inoma as p')
             ->leftJoin('H3.tbl_area_channel as c', 'p.fk_dealer', '=', 'c.kode_channel')
-            ->selectRaw('p.id')
-            ->selectRaw('p.fk_do')
-            ->selectRaw('p.tgl_picking_list_part')
-            ->selectRaw('p.fk_part')
-            ->selectRaw('p.lokasi_part')
-            ->selectRaw('max(p.keterangan_picking) as keterangan_picking')
-            ->selectRaw('max(c.nama_channel) as nama_channel')
-            ->selectRaw('max(c.area) as area')
-            ->selectRaw('p.qty_part')
-            ->selectRaw('p.qty_picking')
-            ->selectRaw('p.status_picking_list')
-            ->selectRaw('p.waktu_done')
-            ->selectRaw('max(p.fk_dealer) as fk_dealer')
-            ->where('p.fk_do', $fkDo)
-            ->groupBy('p.id', 'p.fk_part', 'p.lokasi_part', 'p.qty_part', 'p.qty_picking', 'p.status_picking_list', 'p.waktu_done');
+            ->leftJoin('public.tblpart as t', 'p.fk_part', '=', 't.kd_part')
+            ->select(
+                'p.id',
+                'p.fk_do',
+                'p.fk_dealer',
+                'p.tgl_picking_list_part',
+                'p.no_picking_list_part',
+                'p.fk_part',
+                't.nm_part',
+                'p.lokasi_part',
+                'p.qty_part',
+                'p.qty_picking',
+                'p.status_picking_list',
+                'p.waktu_done',
+                'p.keterangan_picking',
+                'c.nama_channel',
+                'c.area',
+            )
+            ->where('p.fk_do', $fkDo);
 
         $this->areaOperator->saring($query, $this->areaOperator->areaUntuk($user), 'p.lokasi_part');
 
-        return $query->orderBy('p.lokasi_part')->orderBy('p.fk_part')->get()->map(fn (object $row): array => [
-            'id' => $row->id,
-            'fk_do' => $row->fk_do,
-            'tgl_picking_list_part' => $row->tgl_picking_list_part,
-            'fk_part' => strtoupper($row->fk_part ?? ''),
-            'lokasi_part' => strtoupper($row->lokasi_part ?? ''),
-            'keterangan_picking' => $row->keterangan_picking ?: '-',
-            'nama_channel' => $row->nama_channel ?: 'Channel '.$row->fk_dealer,
-            'area' => $row->area ?: '-',
-            'qty_part' => (int) $row->qty_part,
-            'qty_picking' => (int) $row->qty_picking,
-            'status_picking_list' => $row->status_picking_list,
-            'waktu_done' => $row->waktu_done ? (new \DateTime($row->waktu_done))->format('Y-m-d H:i:s') : null,
-            'fk_dealer' => $row->fk_dealer,
-        ])->toArray();
+        return $query
+            ->orderBy('p.fk_part')
+            ->orderBy('p.lokasi_part')
+            ->get()
+            ->map(fn (object $baris): array => [
+                'id' => (int) $baris->id,
+                'fk_do' => $baris->fk_do,
+                'fk_dealer' => $baris->fk_dealer,
+                'tgl_picking_list_part' => $baris->tgl_picking_list_part,
+                'fk_part' => strtoupper((string) $baris->fk_part),
+                'nm_part' => $baris->nm_part ?: '-',
+                'lokasi_part' => strtoupper((string) $baris->lokasi_part),
+                'keterangan_picking' => $baris->keterangan_picking ?: '-',
+                'nama_channel' => $baris->nama_channel ?: 'Channel '.$baris->fk_dealer,
+                'area' => $baris->area ?: '-',
+                'qty_part' => (int) $baris->qty_part,
+                'qty_picking' => (int) $baris->qty_picking,
+                'status_picking_list' => $baris->status_picking_list,
+                'waktu_done' => $baris->waktu_done,
+            ])
+            ->all();
     }
 
     /**
-     * Update status picking item (done/waiting). Hanya untuk item yang masih 'waiting'.
-     * Return array message + waktu_done jika berhasil.
+     * Apakah DO ini bagian dari bundling (badge URGENT). Meniru subquery
+     * `EXISTS public.bundlingh3` milik aplikasi lama.
+     */
+    public function doBundling(string $fkDo): bool
+    {
+        return DB::connection('pgsql_dms')
+            ->table('public.bundlingh3')
+            ->where('fk_do', $fkDo)
+            ->exists();
+    }
+
+    /**
+     * Meniru `updateStatus()` aplikasi lama persis:
+     *
+     * - **Done**: `status_picking_list = 'done'`, `waktu_done = now()`, dan
+     *   `qty_picking` disamakan dengan `qty_part`. Mengembalikan daftar
+     *   `kartustok_list` supaya frontend membuka modal input Kartu Stok.
+     * - **Undo** (dari `done`): membuat baris `H3.kartustok` ber-`fk_do`
+     *   `{do}-UNDO` (barang masuk kembali ke rak), lalu status kembali
+     *   `Ready For Scan`, `waktu_done` dan `qty_picking` dinolkan.
+     *
+     * Item berstatus `final` dikunci — tidak bisa done maupun undo.
      */
     public function updateStatusPart(int $id, string $status): array
     {
-        if ($status === 'done') {
-            // Pastikan item belum done/final
-            $existing = PickingInoma::find($id);
-            if (! $existing || in_array($existing->status_picking_list, ['done', 'final'], true)) {
-                return ['success' => false, 'message' => 'Item sudah selesai atau final.'];
-            }
+        $item = PickingInoma::query()->find($id);
 
-            $existing->status_picking_list = 'done';
-            $existing->waktu_done = now()->toDateTimeString();
-            $existing->save();
+        abort_unless((bool) $item, 404, 'Data tidak ditemukan.');
 
+        if ($item->status_picking_list === PickingInoma::STATUS_FINAL) {
             return [
-                'message' => 'Status berhasil diubah ke Done.',
-                'waktu_done' => $existing->waktu_done,
+                'success' => false,
+                'message' => 'Item sudah Final Check dan tidak bisa diubah dari sini.',
             ];
         }
 
-        // status = waiting (undo)
-        $existing = PickingInoma::find($id);
-        if (! $existing || $existing->status_picking_list !== 'done') {
-            return ['success' => false, 'message' => 'Item tidak bisa di-undo.'];
-        }
+        $kartustokList = [];
 
-        $existing->status_picking_list = 'waiting';
-        $existing->waktu_done = null;
-        $existing->save();
+        DB::connection('pgsql_dms')->transaction(function () use ($item, $status, &$kartustokList): void {
+            if ($status === 'done') {
+                $item->waktu_done = now();
+                $item->status_picking_list = PickingInoma::STATUS_DONE;
+                $item->qty_picking = $item->qty_part;
+
+                $kartustokList[] = [
+                    'fk_do' => (string) $item->fk_do,
+                    'fk_dealer' => (string) $item->fk_dealer,
+                    'fk_part' => (string) $item->fk_part,
+                    'lokasi_part' => (string) $item->lokasi_part,
+                    'qty_part' => (int) $item->qty_part,
+                ];
+            } else {
+                if ($item->status_picking_list === PickingInoma::STATUS_DONE) {
+                    KartuStock::query()->create([
+                        'fk_do' => $item->fk_do.'-UNDO',
+                        'fk_dealer' => $item->fk_dealer,
+                        'tgl_kartu' => now()->toDateString(),
+                        'no_part' => $item->fk_part,
+                        'kode_rak' => $item->lokasi_part,
+                        'qty_masuk' => $item->qty_part,
+                        'qty_keluar' => null,
+                        'status_masuk' => true,
+                    ]);
+                }
+
+                $item->waktu_done = null;
+                $item->status_picking_list = PickingInoma::STATUS_SIAP;
+                $item->qty_picking = 0;
+            }
+
+            $item->save();
+        });
 
         return [
-            'message' => 'Status berhasil diubah ke Waiting.',
-            'waktu_done' => null,
+            'success' => true,
+            'message' => 'Status berhasil di update',
+            'waktu_done' => $item->waktu_done?->toDateTimeString(),
+            'kartustok_list' => $kartustokList,
         ];
+    }
+
+    /**
+     * Menyimpan input Kartu Stok keluar. Aturan aplikasi lama yang dipertahankan:
+     *
+     * - `tgl_kartu = CURRENT_DATE`, `qty_masuk = null`, `status_masuk = false`.
+     * - **Validasi ketat**: `jumlah_input` harus sama persis dengan `qty_part`
+     *   pada baris picking — operator menghitung buta tanpa melihat Qty Part.
+     *   Bila beda, seluruh batch ditolak (transaksi).
+     *
+     * @param  array<int, array{fk_do: string, fk_dealer: string, fk_part: string, lokasi_part: string, jumlah_input: int}>  $items
+     */
+    public function simpanKartuStokKeluar(array $items): int
+    {
+        // Validasi qty harus persis sebelum menulis apa pun.
+        foreach ($items as $item) {
+            $baris = PickingInoma::query()
+                ->where('fk_do', $item['fk_do'])
+                ->where('fk_part', $item['fk_part'])
+                ->where('lokasi_part', $item['lokasi_part'])
+                ->first();
+
+            if (! $baris) {
+                throw ValidationException::withMessages([
+                    'items' => 'Part '.$item['fk_part'].' tidak ditemukan pada DO '.$item['fk_do'].'.',
+                ]);
+            }
+
+            if ((int) $item['jumlah_input'] !== (int) $baris->qty_part) {
+                throw ValidationException::withMessages([
+                    'items' => 'Jumlah barang yang keluar tidak sesuai dengan Qty Part DO. Jika ragu, hitung ulang part yang Anda keluarkan atau hubungi kepala gudang segera.',
+                ]);
+            }
+        }
+
+        $now = now();
+
+        $barisInsert = array_map(fn (array $item): array => [
+            'fk_do' => $item['fk_do'],
+            'fk_dealer' => $item['fk_dealer'],
+            'tgl_kartu' => now()->toDateString(),
+            'no_part' => $item['fk_part'],
+            'kode_rak' => $item['lokasi_part'],
+            'qty_masuk' => null,
+            'qty_keluar' => (int) $item['jumlah_input'],
+            'status_masuk' => false,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $items);
+
+        DB::connection('pgsql_dms')->transaction(function () use ($barisInsert): void {
+            DB::connection('pgsql_dms')->table('H3.kartustok')->insert($barisInsert);
+        });
+
+        return count($barisInsert);
     }
 
     private function statusDo(int $selesai, int $total): string
