@@ -12,6 +12,22 @@ export interface BarisDo {
     is_bundling: boolean;
 }
 
+export interface BarisPart {
+    id: number;
+    fk_do: string;
+    tgl_picking_list_part: string | null;
+    fk_part: string;
+    lokasi_part: string;
+    keterangan_picking: string;
+    nama_channel: string;
+    area: string;
+    qty_part: number;
+    qty_picking: number;
+    status_picking_list: string;
+    waktu_done: string | null;
+    fk_dealer: string | null;
+}
+
 export interface SaringDo {
     area: string | null;
     status: string | null;

@@ -1,14 +1,12 @@
 import { DialogKonfirmasi } from '@/components/dialog-konfirmasi';
 import { PaginasiTabel } from '@/components/paginasi-tabel';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useIzin } from '@/hooks/use-izin';
 import AppLayout from '@/layouts/app-layout';
-import { destroy, index, sync } from '@/routes/picking/picking-part';
+import { destroy, index } from '@/routes/picking/picking-part';
 import { type BreadcrumbItem, type HalamanData } from '@/types';
-import { Head, router } from '@inertiajs/react';
-import { RefreshCw } from 'lucide-react';
+import { Head, router, usePoll } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { PenyaringDo, SEMUA_AREA } from './_components/penyaring-do';
 import { TabelDo } from './_components/tabel-do';
@@ -23,6 +21,8 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Picking Part', href: index().url }];
 
+const INTERVAL_REFRESH_MS = 30000;
+
 export default function PickingPartIndex({
     daftarDo,
     daftarAreaChannel,
@@ -33,6 +33,14 @@ export default function PickingPartIndex({
     const [kunci, setKunci] = useState(saring.cari ?? '');
     const [akanDihapus, setAkanDihapus] = useState<BarisDo | null>(null);
     const [sedangProses, setSedangProses] = useState(false);
+
+    /*
+     * Data di layar selalu hasil sinkronisasi cron aaPanel. usePoll mengambil
+     * ulang props pada URL yang sedang dibuka — termasuk query string penyaring
+     * dan halaman — sehingga operator tidak pernah perlu me-refresh browser.
+     * preserveState dan preserveScroll sudah bawaan dari router.reload.
+     */
+    usePoll(INTERVAL_REFRESH_MS);
 
     const pindah = (perubahan: Record<string, string | number>) => {
         const nilai: Record<string, string | number> = {
@@ -65,14 +73,6 @@ export default function PickingPartIndex({
         router.get(index().url, {}, { preserveState: true, preserveScroll: true, replace: true });
     };
 
-    const sinkronkan = () => {
-        setSedangProses(true);
-        router.post(sync().url, {}, {
-            preserveScroll: true,
-            onFinish: () => setSedangProses(false),
-        });
-    };
-
     const adaPenyaring = Boolean(
         saring.cari || saring.area || saring.status || saring.tgl_dari || saring.tgl_sampai,
     );
@@ -84,7 +84,7 @@ export default function PickingPartIndex({
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <Card>
-                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <CardHeader>
                         <div className="space-y-1">
                             <CardTitle className="text-base">Data Picking Part</CardTitle>
                             <div className="flex items-center gap-2">
@@ -100,20 +100,6 @@ export default function PickingPartIndex({
                                 </span>
                             </div>
                         </div>
-
-                        {izin.ubah && (
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={sinkronkan}
-                                disabled={sedangProses}
-                            >
-                                <RefreshCw
-                                    className={`mr-1 h-4 w-4 ${sedangProses ? 'animate-spin' : ''}`}
-                                />
-                                Sync Sekarang
-                            </Button>
-                        )}
                     </CardHeader>
 
                     <CardContent className="space-y-3">

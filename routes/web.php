@@ -110,7 +110,8 @@ Route::middleware(['auth', 'check.menu.access'])
 
         Route::prefix('picking-part')->name('picking-part.')->group(function () {
             Route::get('/', [PickingPartController::class, 'index'])->name('index');
-            Route::post('sync', [PickingPartController::class, 'sync'])->name('sync');
+            Route::get('/{fkDo}/detail', [PickingPartController::class, 'detail'])->name('detail');
+            Route::post('/update-status', [PickingPartController::class, 'updateStatus'])->name('update-status');
             Route::delete('/', [PickingPartController::class, 'destroy'])->name('destroy');
         });
 

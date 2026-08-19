@@ -8,7 +8,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { detail } from '@/routes/picking/picking-part';
 import { CheckCircle2, Clock, Eye, Hourglass, Trash2, TriangleAlert } from 'lucide-react';
+import { Link } from '@inertiajs/react';
 import type { BarisDo } from './tipe';
 
 interface TabelDoProps {
@@ -117,15 +119,16 @@ export function TabelDo({ daftar, awalBaris, bolehHapus, onHapus }: TabelDoProps
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center justify-center gap-1">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 w-8 p-0"
-                                            title="Halaman detail DO belum dibangun"
-                                            disabled
-                                        >
-                                            <Eye className="h-4 w-4" />
-                                        </Button>
+                                        <Link href={detail({ fkDo: baris.fk_do }).url}>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0"
+                                                title="Lihat detail DO"
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </Link>
                                         {bolehHapus && (
                                             <Button
                                                 variant="ghost"

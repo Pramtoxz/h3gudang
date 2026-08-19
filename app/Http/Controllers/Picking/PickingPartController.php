@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\AdminUser;
 use App\Services\Picking\AreaOperatorService;
 use App\Services\Picking\PickingPartService;
-use App\Services\Picking\SinkronisasiDoService;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,19 +34,31 @@ class PickingPartController extends Controller
         ]);
     }
 
-    /**
-     * Tombol manual memicu command yang sama dengan cron, jadi tidak ada dua
-     * jalur sinkronisasi yang bisa berbeda perilaku.
-     */
-    public function sync(SinkronisasiDoService $sinkronisasi): RedirectResponse
+    public function detail(string $fkDo): Response
     {
-        $hasil = $sinkronisasi->jalankan();
+        $user = $this->user();
 
-        return back()->with('success', sprintf(
-            'Sinkronisasi selesai — %d baris dibaca, %d disimpan.',
-            $hasil['dibaca'],
-            $hasil['disimpan'],
-        ));
+        return Inertia::render('picking/picking-part/Detail', [
+            'fkDo' => $fkDo,
+            'daftarPart' => $this->pickingPart->daftarPartDalamDo($user, $fkDo),
+            'isAdmin' => $user->it === 't',
+        ]);
+    }
+
+    public function updateStatus(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'id' => ['required', 'integer'],
+            'status' => ['required', 'in:done,waiting'],
+        ]);
+
+        $hasil = $this->pickingPart->updateStatusPart($validated['id'], $validated['status']);
+
+        return response()->json([
+            'success' => true,
+            'message' => $hasil['message'],
+            'waktu_done' => $hasil['waktu_done'],
+        ]);
     }
 
     public function destroy(Request $request): RedirectResponse

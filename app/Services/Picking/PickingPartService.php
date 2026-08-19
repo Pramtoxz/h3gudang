@@ -96,6 +96,89 @@ class PickingPartService
         return PickingInoma::query()->where('fk_do', $fkDo)->delete();
     }
 
+    /**
+     * Ambil semua part dalam satu DO, urutkan per lokasi rak → part number.
+     * Data dari koneksi DMS read-only dan langsung ke tabel H3.
+     */
+    public function daftarPartDalamDo(AdminUser $user, string $fkDo): array
+    {
+        $query = DB::connection('pgsql_dms')
+            ->table('H3.tbl_picking_inoma as p')
+            ->leftJoin('H3.tbl_area_channel as c', 'p.fk_dealer', '=', 'c.kode_channel')
+            ->selectRaw('p.id')
+            ->selectRaw('p.fk_do')
+            ->selectRaw('p.tgl_picking_list_part')
+            ->selectRaw('p.fk_part')
+            ->selectRaw('p.lokasi_part')
+            ->selectRaw('max(p.keterangan_picking) as keterangan_picking')
+            ->selectRaw('max(c.nama_channel) as nama_channel')
+            ->selectRaw('max(c.area) as area')
+            ->selectRaw('p.qty_part')
+            ->selectRaw('p.qty_picking')
+            ->selectRaw('p.status_picking_list')
+            ->selectRaw('p.waktu_done')
+            ->selectRaw('max(p.fk_dealer) as fk_dealer')
+            ->where('p.fk_do', $fkDo)
+            ->groupBy('p.id', 'p.fk_part', 'p.lokasi_part', 'p.qty_part', 'p.qty_picking', 'p.status_picking_list', 'p.waktu_done');
+
+        $this->areaOperator->saring($query, $this->areaOperator->areaUntuk($user), 'p.lokasi_part');
+
+        return $query->orderBy('p.lokasi_part')->orderBy('p.fk_part')->get()->map(fn (object $row): array => [
+            'id' => $row->id,
+            'fk_do' => $row->fk_do,
+            'tgl_picking_list_part' => $row->tgl_picking_list_part,
+            'fk_part' => strtoupper($row->fk_part ?? ''),
+            'lokasi_part' => strtoupper($row->lokasi_part ?? ''),
+            'keterangan_picking' => $row->keterangan_picking ?: '-',
+            'nama_channel' => $row->nama_channel ?: 'Channel '.$row->fk_dealer,
+            'area' => $row->area ?: '-',
+            'qty_part' => (int) $row->qty_part,
+            'qty_picking' => (int) $row->qty_picking,
+            'status_picking_list' => $row->status_picking_list,
+            'waktu_done' => $row->waktu_done ? (new \DateTime($row->waktu_done))->format('Y-m-d H:i:s') : null,
+            'fk_dealer' => $row->fk_dealer,
+        ])->toArray();
+    }
+
+    /**
+     * Update status picking item (done/waiting). Hanya untuk item yang masih 'waiting'.
+     * Return array message + waktu_done jika berhasil.
+     */
+    public function updateStatusPart(int $id, string $status): array
+    {
+        if ($status === 'done') {
+            // Pastikan item belum done/final
+            $existing = PickingInoma::find($id);
+            if (! $existing || in_array($existing->status_picking_list, ['done', 'final'], true)) {
+                return ['success' => false, 'message' => 'Item sudah selesai atau final.'];
+            }
+
+            $existing->status_picking_list = 'done';
+            $existing->waktu_done = now()->toDateTimeString();
+            $existing->save();
+
+            return [
+                'message' => 'Status berhasil diubah ke Done.',
+                'waktu_done' => $existing->waktu_done,
+            ];
+        }
+
+        // status = waiting (undo)
+        $existing = PickingInoma::find($id);
+        if (! $existing || $existing->status_picking_list !== 'done') {
+            return ['success' => false, 'message' => 'Item tidak bisa di-undo.'];
+        }
+
+        $existing->status_picking_list = 'waiting';
+        $existing->waktu_done = null;
+        $existing->save();
+
+        return [
+            'message' => 'Status berhasil diubah ke Waiting.',
+            'waktu_done' => null,
+        ];
+    }
+
     private function statusDo(int $selesai, int $total): string
     {
         if ($selesai === 0) {
