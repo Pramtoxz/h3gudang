@@ -139,6 +139,7 @@ class PickingPartService
         $this->areaOperator->saring($query, $this->areaOperator->areaUntuk($user), 'p.lokasi_part');
 
         return $query
+            ->orderByRaw("case when p.status_picking_list = 'waiting' then 0 else 1 end")
             ->orderBy('p.lokasi_part')
             ->orderBy('p.fk_part')
             ->get()
