@@ -34,8 +34,17 @@ class PickingPartController extends Controller
         ]);
     }
 
-    public function detail(string $fkDo): Response
+    /**
+     * Nomor DO berisi slash (mis. `2025/019327/DO-OTHER`), jadi tidak bisa
+     * jadi path segment — Laravel akan memecahnya dan memberi 404. Aplikasi
+     * lama memakai query parameter `?do=...`; perilaku itu dipertahankan.
+     */
+    public function detail(Request $request): Response
     {
+        $fkDo = $request->query('do');
+
+        abort_unless(is_string($fkDo) && $fkDo !== '', 404, 'Parameter DO tidak ditemukan.');
+
         $user = $this->user();
 
         return Inertia::render('picking/picking-part/Detail', [
