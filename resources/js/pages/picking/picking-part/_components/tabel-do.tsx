@@ -119,7 +119,7 @@ export function TabelDo({ daftar, awalBaris, bolehHapus, onHapus }: TabelDoProps
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center justify-center gap-1">
-                                        <Link href={detail({ do: baris.fk_do })}>
+                                        <Link href={detail({ query: { do: baris.fk_do } }).url}>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
