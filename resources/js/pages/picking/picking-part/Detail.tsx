@@ -5,11 +5,11 @@ import { DialogKonfirmasi } from '@/components/dialog-konfirmasi';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { index, updateStatus, kartustok } from '@/routes/picking/picking-part';
+import { index, kartustok } from '@/routes/picking/picking-part';
 import { useIzin } from '@/hooks/use-izin';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { DialogKartuStok, type ItemInput } from './_components/dialog-kartu-stok';
+import { DialogKartuStok, type ItemKartuStok } from './_components/dialog-kartu-stok';
 import { type BarisPart } from './_components/tipe';
 import {
     Table,
@@ -37,64 +37,75 @@ export default function PickingPartDetail({ fkDo, daftarPart, isAdmin, isBundlin
     const [sedangProses, setSedangProses] = useState(false);
     const [akanDihapus, setAkanDihapus] = useState<BarisPart | null>(null);
     const [modalTerbuka, setModalTerbuka] = useState(false);
-    const [itemsKartuStok, setItemsKartuStok] = useState<ItemInput[]>([]);
+    const [itemsKartuStok, setItemsKartuStok] = useState<ItemKartuStok[]>([]);
+    const [kartuStokError, setKartuStokError] = useState<string | null>(null);
 
     const partPertama = daftarPart[0] ?? null;
 
+    /** Update status part (done/undo). */
     const updateStatusPart = async (id: number, status: string) => {
         setSedangProses(true);
+        setKartuStokError(null);
 
         try {
-            const hasil = await new Promise<{
-                success: boolean;
-                message: string;
-                waktu_done?: string;
-                kartustok_list?: Array<{fk_do: string; fk_dealer: string; fk_part: string; lokasi_part: string; qty_part: number}>;
-            }>(async (resolve) => {
-                router.post(updateStatus().url, { id, status }, {
-                    preserveScroll: true,
-                    onFinish: () => resolve({ success: true }),
-                    onSuccess: (page) => {
-                        const data = page.props.flash?.success || {};
-                        resolve(typeof data === 'object' ? data : { success: false });
-                    },
-                    onError: () => resolve({ success: false }),
-                });
+            const res = await fetch('/picking/picking-part/update-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                },
+                body: JSON.stringify({ id, status }),
             });
 
-            // Jika response dari service mengandung kartustok_list → buka modal
-            if (hasil.kartustok_list && hasil.kartustok_list.length > 0) {
-                setItemsKartuStok(hasil.kartustok_list.map((item, idx) => ({
-                    id: id + idx,
-                    fk_do: item.fk_do,
-                    fk_dealer: item.fk_dealer,
-                    fk_part: item.fk_part,
-                    lokasi_part: item.lokasi_part,
-                    qty_part: item.qty_part,
-                })));
-                setModalTerbuka(true);
+            const data = await res.json();
+
+            if (!data.success) {
+                alert(data.message || 'Gagal mengubah status');
+                return;
             }
-        } catch (e) {
-            console.error(e);
+
+            // Jika ada item yang masuk ke kartu stok (mark done), buka modal
+            if (Array.isArray(data.kartustok_list) && data.kartustok_list.length > 0) {
+                setItemsKartuStok(data.kartustok_list);
+                setModalTerbuka(true);
+            } else {
+                location.reload(); // undo / done tanpa kartu stok → reload tabel
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Terjadi kesalahan saat mengupdate status');
         } finally {
             setSedangProses(false);
         }
     };
 
-    const handleSimpanKartuStok = async (items: typeof itemsKartuStok) => {
+    const handleSimpanKartuStok = (items: ItemKartuStok[]) => {
         setSedangProses(true);
-        try {
-            router.post(kartustok().url, { items }, {
-                preserveScroll: true,
-                onSuccess: () => {
-                    location.reload(); // reload setelah kartu stok tersimpan
-                },
-                onFinish: () => setSedangProses(false),
-            });
-        } catch (e) {
-            console.error(e);
+        
+        fetch(kartustok().url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+            },
+            body: JSON.stringify({ items }),
+        })
+        .then((res) => res.json())
+        .then((data) => {
+            if (!data.success) {
+                throw new Error(data.message || 'Gagal menyimpan kartu stok');
+            }
+            location.reload(); // reload setelah sukses
+        })
+        .catch((err) => {
+            console.error(err);
+            alert('Terjadi kesalahan saat menyimpan kartu stok');
+        })
+        .finally(() => {
             setSedangProses(false);
-        }
+        });
     };
 
     /** Hapus item — hanya untuk admin */
@@ -314,8 +325,14 @@ export default function PickingPartDetail({ fkDo, daftarPart, isAdmin, isBundlin
             <DialogKartuStok
                 terbuka={modalTerbuka}
                 items={itemsKartuStok}
-                onSimpan={handleSimpanKartuStok}
                 sedangProses={sedangProses}
+                error={kartuStokError}
+                onSimpan={handleSimpanKartuStok}
+                onBatal={() => {
+                    setModalTerbuka(false);
+                    setKartuStokError(null);
+                    location.reload(); // reload karena ada kemungkinan operator butuh bantuan/pengecualian
+                }}
             />
         </AppLayout>
     );
