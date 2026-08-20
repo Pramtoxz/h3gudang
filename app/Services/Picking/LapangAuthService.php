@@ -3,10 +3,7 @@
 namespace App\Services\Picking;
 
 use App\Models\AdminUser;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-
-/**
 
 class LapangAuthService
 {
