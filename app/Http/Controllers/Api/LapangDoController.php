@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\BarisDoResource;
 use App\Services\Picking\PickingPartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,7 +40,7 @@ class LapangDoController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => BarisDoResource::collection($paginator),
+            'data' => $paginator->items(),
             'meta' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
