@@ -7,12 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Service untuk autentikasi operator lapangan (HP).
- * 
- * Berbeda dari admin desktop yang pakai session cookie + remember token,
- * operator lapangan perlu Bearer token Sanctum untuk API stateless calls
- * dari aplikasi Capacitor.
- */
+
 class LapangAuthService
 {
     public function __construct(
@@ -39,12 +34,6 @@ class LapangAuthService
                 'message' => 'Email atau password salah.',
             ];
         }
-
-        // Buat token Sanctum — tersimpan di warehouse.personal_access_tokens,
-        // bukan di DMS. Nama token memakai hostname perangkat bila tersedia
-        // supaya mudah dicabut per HP dari sisi admin kelak.
-        
-        // Jika rememberMe=false, buat token short-lived (opsional untuk mobile app yang perlu logout otomatis)
         $tokenName = $rememberMe ? 'lapangan-mobile-long' : 'lapangan-mobile-short';
         $tokenResult = $user->createToken($tokenName);
 
