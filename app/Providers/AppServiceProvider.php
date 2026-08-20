@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Auth\AdminUserProvider;
+use App\Models\PersonalAccessToken;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,16 +26,13 @@ class AppServiceProvider extends ServiceProvider
             'admin_dms',
             fn ($app, array $config): AdminUserProvider => new AdminUserProvider($app['hash'], $config['model']),
         );
+
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
     }
 
     private function configureRateLimiting(): void
     {
         $this->configureThrottleApi();
-        
-        Auth::provider(
-            'admin_dms',
-            fn ($app, array $config): AdminUserProvider => new AdminUserProvider($app['hash'], $config['model']),
-        );
     }
 
     private function configureThrottleApi(): void
