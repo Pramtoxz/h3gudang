@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { prosesMasuk } from '@/routes/picking/lapangan';
+import * as lapanganRoutes from '@/routes/lapangan';  // Wayfinder generated routes
 import { Head, useForm } from '@inertiajs/react';
 import { LogIn } from 'lucide-react';
 
@@ -23,7 +23,7 @@ export default function MasukLapangan() {
 
     const kirim = (event: React.FormEvent) => {
         event.preventDefault();
-        post(prosesMasuk().url);
+        post(lapanganRoutes.prosesMasuk().url);
     };
 
     return (
