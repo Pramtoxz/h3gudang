@@ -3,10 +3,13 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\CartController;
-use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\CollectionController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FilterController;
 use App\Http\Controllers\Api\InternalController;
+use App\Http\Controllers\Api\LapangAuthController;
+use App\Http\Controllers\Api\LapangDoController;
+use App\Http\Controllers\Api\LapangWorkController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PartController;
@@ -18,6 +21,29 @@ Route::middleware('throttle:auth')->group(function () {
 });
 
 Route::post('/auth/request-otp', [AuthController::class, 'requestOTP'])->middleware('throttle:otp');
+
+// ============================================
+// Picking Lapangan (API token-based)
+// ============================================
+
+// Login operator lapangan — tidak perlu token, nanti dapat token baru
+Route::post('/lapangan/auth/login', [LapangAuthController::class, 'login'])
+    ->middleware('throttle:lapangan-login');
+
+// Semua endpoint lainnya butuh token
+Route::prefix('lapangan')->middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+    Route::post('/logout', [LapangAuthController::class, 'logout']);
+
+    // DO list & work item
+    Route::get('/do', [LapangDoController::class, 'index']);
+    Route::prefix('do')->group(function () {
+        Route::get('{fkDo}/parts', [LapangWorkController::class, 'parts']);
+    });
+
+    // Update status part dan kartu stok
+    Route::post('/part/update-status', [LapangWorkController::class, 'updateStatus']);
+    Route::post('/kartustok', [LapangWorkController::class, 'simpanKartuStok']);
+});
 
 Route::post('/internal/refresh-cache', [InternalController::class, 'refreshCollectionCache']);
 

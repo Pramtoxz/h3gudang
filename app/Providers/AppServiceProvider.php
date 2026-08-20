@@ -28,6 +28,16 @@ class AppServiceProvider extends ServiceProvider
 
     private function configureRateLimiting(): void
     {
+        $this->configureThrottleApi();
+        
+        Auth::provider(
+            'admin_dms',
+            fn ($app, array $config): AdminUserProvider => new AdminUserProvider($app['hash'], $config['model']),
+        );
+    }
+
+    private function configureThrottleApi(): void
+    {
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
@@ -37,14 +47,13 @@ class AppServiceProvider extends ServiceProvider
         });
 
         /*
-         * Login lapangan tidak memakai reCAPTCHA karena mencentang "I'm not a
-         * robot" di layar yang menempel di lengan menyiksa operator. Penahan
-         * brute-force-nya dipindah ke sini.
+         * Rate limiting untuk login API lapangan — lebih ketat karena dari mobile.
+         * 10 per menit per IP, 3 per menit per email (email yang sama tidak boleh spam).
          */
-        RateLimiter::for('login-lapangan', function (Request $request) {
+        RateLimiter::for('lapangan-login', function (Request $request) {
             return [
-                Limit::perMinute(20)->by($request->ip()),
-                Limit::perMinute(5)->by((string) $request->input('email')),
+                Limit::perMinute(10)->by($request->ip()),
+                Limit::perMinute(3)->by((string) $request->input('email')),
             ];
         });
 
