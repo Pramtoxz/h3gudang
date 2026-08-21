@@ -8,6 +8,7 @@ return [
         'http://127.0.0.1:*',
         'http://192.168.*.*:*',
         'https://*.menara-agung.com',
+        'https://localhost',
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
