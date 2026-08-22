@@ -37,7 +37,8 @@ Route::prefix('lapangan')->middleware(['auth:sanctum', 'throttle:api'])->group(f
     // DO list & work item
     Route::get('/do', [LapangDoController::class, 'index']);
     Route::prefix('do')->group(function () {
-        Route::get('{fkDo}/parts', [LapangWorkController::class, 'parts']);
+        Route::get('{fkDo}/parts', [LapangWorkController::class, 'parts'])
+            ->where('fkDo', '.*');
     });
 
     // Update status part dan kartu stok
