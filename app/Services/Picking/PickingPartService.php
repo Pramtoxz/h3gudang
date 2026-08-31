@@ -186,11 +186,16 @@ class PickingPartService
      *
      * Item berstatus `final` dikunci — tidak bisa done maupun undo.
      */
-    public function updateStatusPart(int $id, string $status): array
+    public function updateStatusPart(AdminUser $user, int $id, string $status): array
     {
         $item = PickingInoma::query()->find($id);
 
         abort_unless((bool) $item, 404, 'Data tidak ditemukan.');
+        abort_unless(
+            $this->areaOperator->bolehMengerjakan($user, $item->lokasi_part),
+            403,
+            'Part ini berada di luar area rak Anda.',
+        );
 
         if ($item->status_picking_list === PickingInoma::STATUS_FINAL) {
             return [
@@ -254,7 +259,7 @@ class PickingPartService
      *
      * @param  array<int, array{fk_do: string, fk_dealer: string, fk_part: string, lokasi_part: string, jumlah_input: int}>  $items
      */
-    public function simpanKartuStokKeluar(array $items): int
+    public function simpanKartuStokKeluar(AdminUser $user, array $items): int
     {
         // Validasi qty harus persis sebelum menulis apa pun.
         foreach ($items as $item) {
@@ -269,6 +274,12 @@ class PickingPartService
                     'items' => 'Part '.$item['fk_part'].' tidak ditemukan pada DO '.$item['fk_do'].'.',
                 ]);
             }
+
+            abort_unless(
+                $this->areaOperator->bolehMengerjakan($user, $baris->lokasi_part),
+                403,
+                'Part '.$item['fk_part'].' berada di luar area rak Anda.',
+            );
 
             if ((int) $item['jumlah_input'] !== (int) $baris->qty_part) {
                 throw ValidationException::withMessages([

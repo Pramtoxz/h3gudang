@@ -45,4 +45,17 @@ class AreaOperatorService
 
         return $query->whereRaw(AreaRak::ekspresiSql($kolom).' = ?', [$area]);
     }
+
+    /**
+     * Penjaga jalur tulis. Menyaring baris yang ditampilkan saja tidak cukup:
+     * done/undo dan kartu stok menerima id atau kombinasi kolom dari klien,
+     * jadi baris di luar area operator harus ditolak di sini — bukan hanya
+     * disembunyikan dari layarnya.
+     */
+    public function bolehMengerjakan(AdminUser $user, ?string $lokasiPart): bool
+    {
+        $area = $this->areaUntuk($user);
+
+        return $area === null || AreaRak::untuk($lokasiPart) === $area;
+    }
 }

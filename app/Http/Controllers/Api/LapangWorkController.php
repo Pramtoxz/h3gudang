@@ -65,6 +65,7 @@ class LapangWorkController extends Controller
         ]);
 
         $result = $this->service->updateStatusPart(
+            $request->user(),
             (int) $validated['id'],
             $validated['status']
         );
@@ -101,7 +102,7 @@ class LapangWorkController extends Controller
         ]);
 
         try {
-            $count = $this->service->simpanKartuStokKeluar($validated['items']);
+            $count = $this->service->simpanKartuStokKeluar($request->user(), $validated['items']);
 
             return response()->json([
                 'success' => true,

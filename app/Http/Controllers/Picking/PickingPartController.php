@@ -62,7 +62,7 @@ class PickingPartController extends Controller
             'status' => ['required', 'in:done,waiting'],
         ]);
 
-        $hasil = $this->pickingPart->updateStatusPart($validated['id'], $validated['status']);
+        $hasil = $this->pickingPart->updateStatusPart($this->user(), $validated['id'], $validated['status']);
 
         return response()->json($hasil);
     }
@@ -83,7 +83,7 @@ class PickingPartController extends Controller
             'items.*.jumlah_input' => ['required', 'integer', 'min:1'],
         ]);
 
-        $jumlah = $this->pickingPart->simpanKartuStokKeluar($validated['items']);
+        $jumlah = $this->pickingPart->simpanKartuStokKeluar($this->user(), $validated['items']);
 
         return response()->json([
             'success' => true,

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Picking\AksesAreaController;
 use App\Http\Controllers\Picking\ChannelController;
+use App\Http\Controllers\Picking\FinalCheckController;
 use App\Http\Controllers\Picking\LokasiRakController;
 use App\Http\Controllers\Picking\PickingPartController;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +37,12 @@ Route::prefix('picking-part')->name('picking-part.')->group(function () {
     Route::post('/kartustok', [PickingPartController::class, 'kartustok'])->name('kartustok');
     Route::delete('/items/{id}', [PickingPartController::class, 'hapusItem'])->name('hapus-item');
     Route::delete('/', [PickingPartController::class, 'destroy'])->name('destroy');
+});
+
+Route::prefix('final-check')->name('final-check.')->group(function () {
+    Route::get('/', [FinalCheckController::class, 'index'])->name('index');
+    Route::get('/detail', [FinalCheckController::class, 'detail'])->name('detail');
+    Route::post('/', [FinalCheckController::class, 'simpan'])->name('store');
 });
 
 Route::prefix('akses-area')->name('akses-area.')->group(function () {
