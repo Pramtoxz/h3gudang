@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import { detail, index, store } from '@/routes/picking/final-check';
+import { detail, store } from '@/routes/picking/final-check';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { ArrowLeft, Save, TriangleAlert } from 'lucide-react';
@@ -18,6 +18,7 @@ interface Props {
     infoDo: InfoDoFinal;
     daftarPart: BarisPartFinal[];
     isBundling: boolean;
+    urlKembali: string;
 }
 
 function tanggal(nilai: string | null): string {
@@ -28,9 +29,15 @@ function tanggal(nilai: string | null): string {
     return new Date(nilai.replace(' ', 'T')).toLocaleDateString('id-ID');
 }
 
-export default function FinalCheckDetail({ fkDo, infoDo, daftarPart, isBundling }: Props) {
+export default function FinalCheckDetail({
+    fkDo,
+    infoDo,
+    daftarPart,
+    isBundling,
+    urlKembali,
+}: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Final Check', href: index().url },
+        { title: 'Final Check', href: urlKembali },
         { title: `DO ${fkDo}`, href: detail({ query: { do: fkDo } }).url },
     ];
 
@@ -118,7 +125,7 @@ export default function FinalCheckDetail({ fkDo, infoDo, daftarPart, isBundling 
                             </div>
                         </div>
 
-                        <Button variant="outline" size="sm" onClick={() => router.get(index().url)}>
+                        <Button variant="outline" size="sm" onClick={() => router.get(urlKembali)}>
                             <ArrowLeft className="mr-1 h-4 w-4" />
                             Kembali
                         </Button>

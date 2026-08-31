@@ -29,10 +29,6 @@ class FinalCheckController extends Controller
         ]);
     }
 
-    /**
-     * Nomor DO berisi garis miring, jadi tidak bisa jadi segment path — sama
-     * seperti Picking Part, dipakai query parameter `?do=...`.
-     */
     public function detail(Request $request): Response
     {
         $fkDo = $request->query('do');
@@ -48,6 +44,7 @@ class FinalCheckController extends Controller
             'infoDo' => $info,
             'daftarPart' => $this->finalCheck->daftarPartDalamDo($fkDo),
             'isBundling' => $this->finalCheck->doBundling($fkDo),
+            'urlKembali' => $this->urlKembali($request),
         ]);
     }
 
@@ -63,6 +60,21 @@ class FinalCheckController extends Controller
             $hasil['jumlah_kotak'],
             $hasil['jumlah_final'],
         ));
+    }
+
+    /**
+     * Penyaring dan halaman ikut dibawa ke detail lalu dirakit ulang di sini,
+     * supaya tombol Kembali mengembalikan petugas ke daftar yang persis sama —
+     * bukan ke penyaring bawaan.
+     */
+    private function urlKembali(Request $request): string
+    {
+        $bawaan = array_filter([
+            ...$this->saringDari($request),
+            'page' => $request->query('page'),
+        ]);
+
+        return route('picking.final-check.index', $bawaan);
     }
 
     private function user(): AdminUser

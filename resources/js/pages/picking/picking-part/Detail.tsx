@@ -5,11 +5,15 @@ import { DialogKonfirmasi } from '@/components/dialog-konfirmasi';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { index, kartustok } from '@/routes/picking/picking-part';
+import { detail, kartustok } from '@/routes/picking/picking-part';
 import { useIzin } from '@/hooks/use-izin';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { DialogKartuStok, type ItemKartuStok } from './_components/dialog-kartu-stok';
+import {
+    DialogKartuStok,
+    type ItemKartuStok,
+    type KirimanKartuStok,
+} from './_components/dialog-kartu-stok';
 import { type BarisPart } from './_components/tipe';
 import {
     Table,
@@ -25,14 +29,21 @@ interface Props {
     daftarPart: BarisPart[];
     isAdmin: boolean;
     isBundling: boolean;
+    urlKembali: string;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Picking Part', href: index().url },
-    { title: 'Detail DO' },
-];
+export default function PickingPartDetail({
+    fkDo,
+    daftarPart,
+    isAdmin,
+    isBundling,
+    urlKembali,
+}: Props) {
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Picking Part', href: urlKembali },
+        { title: `DO ${fkDo}`, href: detail({ query: { do: fkDo } }).url },
+    ];
 
-export default function PickingPartDetail({ fkDo, daftarPart, isAdmin, isBundling }: Props) {
     const izin = useIzin();
     const [sedangProses, setSedangProses] = useState(false);
     const [akanDihapus, setAkanDihapus] = useState<BarisPart | null>(null);
@@ -80,7 +91,7 @@ export default function PickingPartDetail({ fkDo, daftarPart, isAdmin, isBundlin
         }
     };
 
-    const handleSimpanKartuStok = (items: ItemKartuStok[]) => {
+    const handleSimpanKartuStok = (items: KirimanKartuStok[]) => {
         setSedangProses(true);
         
         fetch(kartustok().url, {
@@ -168,7 +179,7 @@ export default function PickingPartDetail({ fkDo, daftarPart, isAdmin, isBundlin
                             )}
                         </div>
 
-                        <Button variant="outline" size="sm" onClick={() => router.get(index().url)}>
+                        <Button variant="outline" size="sm" onClick={() => router.get(urlKembali)}>
                             <ArrowLeft className="mr-1 h-4 w-4" />
                             Kembali
                         </Button>

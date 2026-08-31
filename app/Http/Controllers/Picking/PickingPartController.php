@@ -52,6 +52,7 @@ class PickingPartController extends Controller
             'daftarPart' => $this->pickingPart->daftarPartDalamDo($user, $fkDo),
             'isBundling' => $this->pickingPart->doBundling($fkDo),
             'isAdmin' => $this->bolehKelola($user),
+            'urlKembali' => $this->urlKembali($request),
         ]);
     }
 
@@ -130,6 +131,21 @@ class PickingPartController extends Controller
         }
 
         return back()->with('success', sprintf('%d item DO %s dihapus.', $jumlah, $fkDo));
+    }
+
+    /**
+     * Penyaring dan halaman ikut dibawa ke detail lalu dirakit ulang di sini,
+     * supaya tombol Kembali mengembalikan operator ke daftar yang persis sama —
+     * bukan ke penyaring bawaan di halaman pertama.
+     */
+    private function urlKembali(Request $request): string
+    {
+        $bawaan = array_filter([
+            ...$this->saringDari($request),
+            'page' => $request->query('page'),
+        ]);
+
+        return route('picking.picking-part.index', $bawaan);
     }
 
     private function user(): AdminUser

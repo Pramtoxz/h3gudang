@@ -17,6 +17,7 @@ interface TabelDoProps {
     daftar: BarisDo[];
     awalBaris: number;
     bolehHapus: boolean;
+    penyaringAktif: Record<string, string | number>;
     onHapus: (baris: BarisDo) => void;
 }
 
@@ -61,7 +62,7 @@ function BarProgres({ selesai, total }: { selesai: number; total: number }) {
     );
 }
 
-export function TabelDo({ daftar, awalBaris, bolehHapus, onHapus }: TabelDoProps) {
+export function TabelDo({ daftar, awalBaris, bolehHapus, penyaringAktif, onHapus }: TabelDoProps) {
     return (
         <div className="overflow-x-auto rounded-md border">
             <Table>
@@ -119,7 +120,13 @@ export function TabelDo({ daftar, awalBaris, bolehHapus, onHapus }: TabelDoProps
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center justify-center gap-1">
-                                        <Link href={detail({ query: { do: baris.fk_do } }).url}>
+                                        <Link
+                                            href={
+                                                detail({
+                                                    query: { do: baris.fk_do, ...penyaringAktif },
+                                                }).url
+                                            }
+                                        >
                                             <Button
                                                 variant="ghost"
                                                 size="sm"

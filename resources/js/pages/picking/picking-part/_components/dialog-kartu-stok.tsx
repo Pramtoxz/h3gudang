@@ -11,12 +11,21 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+/**
+ * Sengaja tanpa `qty_part` meski server ikut mengirimkannya: operator harus
+ * menghitung buta, jadi jumlah yang diharapkan tidak boleh sampai ke layar.
+ * Menahannya di tingkat tipe membuat aturan itu tidak bisa dilanggar tanpa
+ * sengaja.
+ */
 export interface ItemKartuStok {
     fk_do: string;
     fk_dealer: string;
     fk_part: string;
     lokasi_part: string;
-    qty_part: number;
+}
+
+export interface KirimanKartuStok extends ItemKartuStok {
+    jumlah_input: number;
 }
 
 interface DialogKartuStokProps {
@@ -24,15 +33,7 @@ interface DialogKartuStokProps {
     items: ItemKartuStok[];
     sedangProses: boolean;
     error: string | null;
-    onSimpan: (
-        items: Array<{
-            fk_do: string;
-            fk_dealer: string;
-            fk_part: string;
-            lokasi_part: string;
-            jumlah_input: number;
-        }>,
-    ) => void;
+    onSimpan: (items: KirimanKartuStok[]) => void;
     onBatal: () => void;
 }
 

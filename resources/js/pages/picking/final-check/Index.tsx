@@ -56,6 +56,17 @@ export default function FinalCheckIndex({ daftarDo, daftarAreaChannel, saring }:
     );
     const awalBaris = (daftarDo.current_page - 1) * daftarDo.per_page;
 
+    const penyaringAktif = Object.fromEntries(
+        Object.entries({
+            cari: saring.cari ?? '',
+            area: saring.area ?? '',
+            status: saring.status ?? '',
+            tgl_dari: saring.tgl_dari ?? '',
+            tgl_sampai: saring.tgl_sampai ?? '',
+            page: daftarDo.current_page > 1 ? daftarDo.current_page : '',
+        }).filter(([, isi]) => isi !== ''),
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Final Check" />
@@ -92,7 +103,11 @@ export default function FinalCheckIndex({ daftarDo, daftarAreaChannel, saring }:
                             onReset={reset}
                         />
 
-                        <TabelDo daftar={daftarDo.data} awalBaris={awalBaris} />
+                        <TabelDo
+                            daftar={daftarDo.data}
+                            awalBaris={awalBaris}
+                            penyaringAktif={penyaringAktif}
+                        />
 
                         <PaginasiTabel
                             halaman={daftarDo.current_page}

@@ -16,6 +16,7 @@ import type { BarisDoFinal } from './tipe';
 interface TabelDoProps {
     daftar: BarisDoFinal[];
     awalBaris: number;
+    penyaringAktif: Record<string, string | number>;
 }
 
 function tanggal(nilai: string | null): string {
@@ -42,7 +43,7 @@ function BarProgres({ selesai, total }: { selesai: number; total: number }) {
     );
 }
 
-export function TabelDo({ daftar, awalBaris }: TabelDoProps) {
+export function TabelDo({ daftar, awalBaris, penyaringAktif }: TabelDoProps) {
     return (
         <div className="overflow-x-auto rounded-md border">
             <Table>
@@ -108,7 +109,13 @@ export function TabelDo({ daftar, awalBaris }: TabelDoProps) {
                                     <BarProgres selesai={baris.final_parts} total={baris.total_items} />
                                 </TableCell>
                                 <TableCell className="text-center">
-                                    <Link href={detail({ query: { do: baris.fk_do } }).url}>
+                                    <Link
+                                        href={
+                                            detail({
+                                                query: { do: baris.fk_do, ...penyaringAktif },
+                                            }).url
+                                        }
+                                    >
                                         <Button variant="outline" size="sm">
                                             <ClipboardCheck className="mr-1 h-4 w-4" />
                                             Final Check
