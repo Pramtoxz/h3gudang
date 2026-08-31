@@ -150,6 +150,27 @@ class NavigasiService
     }
 
     /**
+     * Tujuan beranda `/`: project yang terakhir dibuka user bila masih boleh
+     * diakses, kalau tidak project pertama miliknya.
+     *
+     * Mengembalikan null bila user tidak punya project sama sekali, dan string
+     * kosong bila punya project tapi belum ada menu yang bisa dibuka di sana —
+     * dua keadaan yang perlu dibedakan pemanggilnya.
+     */
+    public function urlPendaratan(AdminUser $user, ?string $kodeProjectTerakhir): ?string
+    {
+        $project = collect($this->projectUntuk($user));
+
+        if ($project->isEmpty()) {
+            return null;
+        }
+
+        $tujuan = $project->firstWhere('kode', $kodeProjectTerakhir) ?? $project->first();
+
+        return $this->urlAwal($user, $tujuan['id']) ?? '';
+    }
+
+    /**
      * Dipakai middleware untuk memutuskan apakah sebuah route boleh dibuka.
      * Nama route admin berbentuk `<project>.<modul>.<aksi>`: dua segmen pertama
      * menentukan modulnya, segmen terakhir menentukan aksi yang dituntut.
