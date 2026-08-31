@@ -46,8 +46,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         /*
-         * Rate limiting untuk login API lapangan — lebih ketat karena dari mobile.
-         * 10 per menit per IP, 3 per menit per email (email yang sama tidak boleh spam).
+         * Login API lapangan lebih ketat karena dipanggil dari aplikasi operator:
+         * 10 per menit per IP, 3 per menit per email supaya satu akun tidak dispam.
          */
         RateLimiter::for('lapangan-login', function (Request $request) {
             return [

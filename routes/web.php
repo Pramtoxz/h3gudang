@@ -5,8 +5,6 @@ use App\Http\Controllers\Pengaturan\HakAksesController;
 use App\Http\Controllers\Pengaturan\MenuController;
 use App\Http\Controllers\Picking\AksesAreaController;
 use App\Http\Controllers\Picking\ChannelController;
-use App\Http\Controllers\Picking\LapangController;
-use App\Http\Controllers\Picking\LoginLapanganController;
 use App\Http\Controllers\Picking\LokasiRakController;
 use App\Http\Controllers\Picking\PickingPartController;
 use App\Http\Controllers\Pmo\DashboardController;
@@ -49,22 +47,6 @@ Route::get('/', function (Request $request, NavigasiService $navigasi) {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
-
-    // Layar lapangan operator (HP landscape di lengan)
-    Route::prefix('picking/lapangan')->name('lapangan.')->group(function () {
-        Route::get('masuk', [LoginLapanganController::class, 'create'])->name('masuk');
-        Route::post('masuk', [LoginLapanganController::class, 'store'])
-            ->middleware('throttle:login-lapangan')
-            ->name('proses-masuk');
-        
-        // Setelah login → masuk halaman kerja
-        Route::get('/', [LapangController::class, 'index'])
-            ->middleware('auth')
-            ->name('index');
-        Route::get('/kerja', [LapangController::class, 'kerja'])
-            ->middleware('auth')
-            ->name('kerja');
-    });
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])

@@ -1,0 +1,328 @@
+{
+  "info": {
+    "name": "Picking Lapangan API",
+    "description": "API token-based untuk aplikasi operator lapangan (SPA React + Capacitor di folder `picking-lapangan/`).\n\n## Cara pakai\n\n1. Import collection ini ke Postman.\n2. Buka tab **Variables**, sesuaikan `base_url`:\n   - Produksi: `https://picking.menara-agung.com/api`\n   - Lokal: `http://localhost:8000/api`\n3. Jalankan **Auth > Login**. Token otomatis tersimpan ke variable `token` lewat test script, jadi request lain langsung terautentikasi.\n4. Isi variable `fk_do` dan `part_id` dari hasil **Daftar DO** sebelum memakai request Detail/Update.\n\n## Catatan penting\n\n- Autentikasi memakai Sanctum bearer token dan diverifikasi ke `AdminUser` (DMS `public.users`) — akun yang sama dengan login web admin.\n- Nomor DO **mengandung garis miring** (contoh `2026/018310/DO-OTHER`). Route backend memakai `->where('fkDo', '.*')` sehingga garis miring boleh dikirim apa adanya. Kalau Postman meng-encode `{{fk_do}}` jadi `%2F`, tempel saja nomor DO langsung ke URL-nya.\n- Endpoint `kartustok` menolak seluruh batch bila `jumlah_input` tidak sama persis dengan `qty_part` — ini disengaja (operator menghitung buta tanpa melihat Qty Part).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://picking.menara-agung.com/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "android@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fk_do",
+      "value": "2026/018310/DO-OTHER",
+      "type": "string"
+    },
+    {
+      "key": "part_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Login dan logout operator lapangan.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"remember_me\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/lapangan/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["lapangan", "auth", "login"]
+            },
+            "description": "Verifikasi email + password ke `AdminUser` (DMS), lalu terbitkan token Sanctum yang disimpan di `warehouse.personal_access_tokens`.\n\nTidak perlu token. Dibatasi rate limiter `lapangan-login`: 10 percobaan/menit per IP dan 3/menit per email.\n\nResponse sukses:\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"token\": \"2|xxxxx\",\n    \"user\": {\n      \"id\": 328,\n      \"email\": \"android@gmail.com\",\n      \"nama\": \"DITO ANDROID\",\n      \"area_operator\": null,\n      \"adalah_admin_area\": true\n    }\n  }\n}\n```\n\n`area_operator` bernilai `null` berarti operator boleh melihat semua area rak."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "",
+                  "pm.test('Login berhasil', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(data.success).to.eql(true);",
+                  "});",
+                  "",
+                  "if (data.success && data.data && data.data.token) {",
+                  "    pm.collectionVariables.set('token', data.data.token);",
+                  "    console.log('Token tersimpan:', data.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/lapangan/logout",
+              "host": ["{{base_url}}"],
+              "path": ["lapangan", "logout"]
+            },
+            "description": "Menghapus token yang sedang dipakai. Token lain milik user yang sama tidak ikut dicabut."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Logout berhasil', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('token', '');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Daftar DO",
+      "description": "Daftar DO yang perlu dipicking. Penyaringnya identik dengan halaman web `Picking\\PickingPartController@index`.",
+      "item": [
+        {
+          "name": "Daftar DO (bawaan)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/lapangan/do",
+              "host": ["{{base_url}}"],
+              "path": ["lapangan", "do"]
+            },
+            "description": "Tanpa parameter status, backend memakai penyaring bawaan `default` = **Waiting + On Progress** (semua DO yang belum 100% selesai). Ini angka yang sama dengan halaman web tanpa penyaring.\n\nBaris otomatis disaring ke area rak operator; operator ber-`area_operator: null` melihat semua area.\n\nResponse:\n```json\n{\n  \"success\": true,\n  \"data\": [ { \"fk_do\": \"...\", \"total_items\": 4, \"done_parts\": 0, \"status_do\": \"Waiting\", \"is_bundling\": false } ],\n  \"meta\": { \"current_page\": 1, \"last_page\": 7, \"total\": 151 },\n  \"saring\": { \"area\": null, \"status\": null, \"tgl_dari\": null, \"tgl_sampai\": null, \"cari\": null },\n  \"area_operator\": null,\n  \"daftar_area_channel\": [\"PP - Batusangkar\", \"...\"]\n}\n```\n\n`daftar_area_channel` hanya diisi pada halaman 1 supaya paginasi berikutnya tidak menjalankan query yang sama berulang."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "",
+                  "pm.test('Daftar DO terambil', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(data.success).to.eql(true);",
+                  "    pm.expect(data.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "if (data.data && data.data.length > 0) {",
+                  "    pm.collectionVariables.set('fk_do', data.data[0].fk_do);",
+                  "    console.log('fk_do tersimpan:', data.data[0].fk_do);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Daftar DO (penyaring lengkap)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/lapangan/do?page=1&status=Waiting&area=&cari=&tgl_dari=&tgl_sampai=",
+              "host": ["{{base_url}}"],
+              "path": ["lapangan", "do"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Halaman paginasi. 25 baris per halaman." },
+                {
+                  "key": "status",
+                  "value": "Waiting",
+                  "description": "Kosong/tidak dikirim = Waiting + On Progress (bawaan). Pilihan lain: Waiting, On Progress, Done, all (semua status hari ini)."
+                },
+                {
+                  "key": "area",
+                  "value": "",
+                  "description": "Area channel (area penjualan, bukan area rak). Ambil pilihannya dari daftar_area_channel."
+                },
+                {
+                  "key": "cari",
+                  "value": "",
+                  "description": "Cari di nomor DO, kode dealer, nama channel, atau area channel (ILIKE)."
+                },
+                {
+                  "key": "tgl_dari",
+                  "value": "",
+                  "description": "Format YYYY-MM-DD. Hanya berlaku saat status=Done. Kosong berarti hari ini."
+                },
+                {
+                  "key": "tgl_sampai",
+                  "value": "",
+                  "description": "Format YYYY-MM-DD. Hanya berlaku saat status=Done. Kosong berarti hari ini."
+                }
+              ]
+            },
+            "description": "Semua penyaring bersifat opsional dan bisa digabung. Parameter kosong diperlakukan sebagai `null` oleh backend.\n\nPerhatikan perbedaan dua istilah \"area\":\n- **area channel** — area penjualan (Padang, Bukittinggi), dikirim lewat parameter `area`.\n- **area rak** — jatah rak operator (A1-A3, B, F-J), tidak bisa dikirim klien; ditentukan server dari `H3.tbl_akses_mu`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kerja DO",
+      "description": "Detail part dalam satu DO, penandaan selesai, dan kartu stok keluar.",
+      "item": [
+        {
+          "name": "Detail part dalam DO",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/lapangan/do/{{fk_do}}/parts",
+              "host": ["{{base_url}}"],
+              "path": ["lapangan", "do", "{{fk_do}}", "parts"]
+            },
+            "description": "Semua part dalam satu DO, sudah disaring ke area rak operator. Urutan: `waiting` dulu, lalu lokasi rak menaik, lalu part number.\n\n**Nomor DO mengandung garis miring.** Route backend memakai `->where('fkDo', '.*')` supaya `2026/018310/DO-OTHER` tertangkap utuh sebagai satu nilai. Kalau Postman meng-encode variable jadi `%2F` dan server membalas 404, tempel nomor DO langsung ke kolom URL.\n\nMembalas **404** bila DO tidak ada, atau bila tidak ada satu pun part-nya yang jatuh di area rak operator.\n\nResponse sukses:\n```json\n{\n  \"success\": true,\n  \"data\": [ { \"id\": 123, \"fk_part\": \"...\", \"nm_part\": \"...\", \"lokasi_part\": \"A1.01.3\", \"qty_part\": 2, \"qty_picking\": 0, \"status_picking_list\": \"waiting\", \"waktu_done\": null } ],\n  \"is_bundling\": false\n}\n```\n\n`is_bundling: true` = DO bundling, ditampilkan sebagai badge URGENT."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "",
+                  "pm.test('Detail part terambil', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(data.success).to.eql(true);",
+                  "});",
+                  "",
+                  "if (data.data && data.data.length > 0) {",
+                  "    pm.collectionVariables.set('part_id', data.data[0].id);",
+                  "    console.log('part_id tersimpan:', data.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tandai part selesai (done)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{part_id}},\n  \"status\": \"done\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/lapangan/part/update-status",
+              "host": ["{{base_url}}"],
+              "path": ["lapangan", "part", "update-status"]
+            },
+            "description": "⚠️ **Menulis ke DMS** (`H3.tbl_picking_inoma`). Jangan dijalankan sembarangan di produksi.\n\nMenyetel `status_picking_list = 'done'`, `waktu_done = now()`, dan `qty_picking = qty_part`.\n\nResponse membawa `kartustok_list` — daftar item yang harus diisikan ke Kartu Stok lewat request berikutnya. Selama kartu stok belum disimpan, pekerjaan part itu belum tuntas.\n\n```json\n{\n  \"success\": true,\n  \"message\": \"Status berhasil di update\",\n  \"waktu_done\": \"2026-08-21 10:12:33\",\n  \"kartustok_list\": [ { \"fk_do\": \"...\", \"fk_dealer\": \"...\", \"fk_part\": \"...\", \"lokasi_part\": \"...\", \"qty_part\": 2 } ]\n}\n```\n\nItem berstatus `final` ditolak (`success: false`) — sudah dikunci Final Check."
+          }
+        },
+        {
+          "name": "Batalkan part (undo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{part_id}},\n  \"status\": \"waiting\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/lapangan/part/update-status",
+              "host": ["{{base_url}}"],
+              "path": ["lapangan", "part", "update-status"]
+            },
+            "description": "⚠️ **Menulis ke DMS** (`H3.tbl_picking_inoma` dan `H3.kartustok`).\n\nMengembalikan status ke `Ready For Scan`, mengosongkan `waktu_done`, dan menolkan `qty_picking`.\n\nBila part sebelumnya berstatus `done`, otomatis dibuat baris `H3.kartustok` ber-`fk_do` `{nomor-do}-UNDO` sebagai catatan barang kembali ke rak.\n\n`kartustok_list` pada response undo selalu kosong."
+          }
+        },
+        {
+          "name": "Simpan kartu stok keluar",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"fk_do\": \"{{fk_do}}\",\n      \"fk_dealer\": \"DRA1\",\n      \"fk_part\": \"91201KWWA01\",\n      \"lokasi_part\": \"A1.01.3\",\n      \"jumlah_input\": 2\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/lapangan/kartustok",
+              "host": ["{{base_url}}"],
+              "path": ["lapangan", "kartustok"]
+            },
+            "description": "⚠️ **Menulis ke DMS** (`H3.kartustok`).\n\nIsi `items` diambil dari `kartustok_list` hasil request \"Tandai part selesai\", ditambah `jumlah_input` — hasil hitungan fisik operator.\n\n**Validasi ketat:** `jumlah_input` harus sama persis dengan `qty_part` pada baris picking. Bila satu item saja melenceng, **seluruh batch ditolak** dengan 422 dan tidak ada baris yang tersimpan. Ini disengaja: operator menghitung buta tanpa melihat Qty Part di layar, jadi ketidakcocokan berarti hitungan perlu diulang atau kepala gudang perlu dihubungi.\n\nSemua field wajib diisi: `fk_do`, `fk_dealer`, `fk_part`, `lokasi_part`, `jumlah_input` (integer, minimal 1)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Kartu stok tersimpan atau ditolak dengan pesan jelas', function () {",
+                  "    pm.expect([200, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
