@@ -13,7 +13,7 @@ class PartListResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $stok = $this->stock->first();
+        $stockSummary = $this->getStockSummary();
         $discontinued = ! $this->part_active;
 
         return [
@@ -24,7 +24,7 @@ class PartListResource extends JsonResource
             'description' => PartHelper::getPartDescription($this->resource, $this->product),
             'price' => (float) $this->het,
             'category' => $this->fk_detail_sub_kelompok_part,
-            'isReady' => $stok?->is_available ?? false,
+            'isReady' => $stockSummary->is_ready,
             'isDiscontinued' => $discontinued,
             'canOrder' => ! $discontinued,
         ];

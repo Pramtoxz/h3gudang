@@ -36,7 +36,7 @@ class PartService
         return Part::with(self::RELASI)->where('kd_part', $partNumber)->firstOrFail();
     }
 
-    public function cekStok(string $partCode): array
+    public function cekStok(string $partCode, ?int $bulan = null, ?int $tahun = null): array
     {
         $part = Part::where('kd_part', $partCode)->first();
 
@@ -44,21 +44,15 @@ class PartService
             return ['available' => false, 'message' => 'Part not found', 'qty' => 0];
         }
 
-        $stok = $part->stock()->first();
-
-        if (! $stok) {
-            return ['available' => false, 'message' => 'Stock not found', 'qty' => 0];
-        }
-
-        $tersedia = $stok->available;
+        $summary = $part->getStockSummary($bulan, $tahun);
 
         return [
-            'available' => $stok->is_available,
-            'message' => $stok->is_available ? "Available {$tersedia} pcs" : 'Not Available',
-            'qty' => max(0, $tersedia),
-            'qty_on_hand' => $stok->qty_on_hand,
-            'qty_booking' => $stok->qty_booking,
-            'min_stock' => $part->min_stok,
+            'available' => $summary->is_available,
+            'message' => $summary->is_available ? "Available {$summary->available} pcs" : 'Not Available',
+            'qty' => $summary->available_qty,
+            'qty_on_hand' => $summary->qty_on_hand,
+            'qty_booking' => $summary->qty_booking,
+            'min_stock' => $summary->min_stock,
         ];
     }
 

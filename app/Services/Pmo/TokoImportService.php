@@ -13,7 +13,7 @@ class TokoImportService
      * Hash password default dipertahankan persis seperti @old supaya password
      * awal yang sudah diketahui admin tidak berubah untuk toko baru.
      */
-    private const PASSWORD_HASH_DEFAULT = '$2y$10$7g7i7KLU4DFMVJLQ24ucfe/tjZ/gVRn6WYi7CGrlbQp6VZO2d.QFW';
+    private const PASSWORD_HASH_DEFAULT = '$2y$12$xxtttfLNJil.0EMQvH0fhus4BmT2UcOzOKBt16DCAFj4DYa4bC2X2';
 
     private const DOMAIN_EMAIL_DEFAULT = '@pmo.com';
 

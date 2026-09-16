@@ -48,8 +48,11 @@ class PartController extends Controller
         );
     }
 
-    public function checkStock(string $partNumber): JsonResponse
+    public function checkStock(Request $request, string $partNumber): JsonResponse
     {
-        return ApiResponse::success($this->partService->cekStok($partNumber));
+        $bulan = $request->query('bulan') ? (int) $request->query('bulan') : null;
+        $tahun = $request->query('tahun') ? (int) $request->query('tahun') : null;
+
+        return ApiResponse::success($this->partService->cekStok($partNumber, $bulan, $tahun));
     }
 }

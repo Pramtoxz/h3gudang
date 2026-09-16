@@ -38,7 +38,7 @@ class OrderService
 
             $this->simpanSalesOrder($noSo, $jenisOrder, $grandTotal, $keranjang);
 
-            $this->kirimNotifikasi($keranjang, $noSo, $grandTotal, $userId);
+            $this->kirimNotifikasi($keranjang, $noSo, $userId);
 
             $keranjang->items()->delete();
             $keranjang->delete();
@@ -120,10 +120,10 @@ class OrderService
      * Sales Order sudah tersimpan di DMS yang berada di luar transaksi ini,
      * sehingga kegagalan notifikasi tidak boleh membatalkan checkout.
      */
-    private function kirimNotifikasi(Cart $keranjang, string $noSo, float|int|string $grandTotal, int $userId): void
+    private function kirimNotifikasi(Cart $keranjang, string $noSo, int $userId): void
     {
         try {
-            $this->kirimNotifikasiGrupWhatsApp($keranjang, $noSo, $grandTotal);
+            $this->kirimNotifikasiGrupWhatsApp($keranjang, $noSo);
         } catch (\Throwable $e) {
             Log::error('Gagal kirim notifikasi WA order: ' . $e->getMessage(), ['no_so' => $noSo]);
         }
@@ -135,14 +135,13 @@ class OrderService
         }
     }
 
-    private function kirimNotifikasiGrupWhatsApp(Cart $keranjang, string $noSo, float|int|string $grandTotal): void
+    private function kirimNotifikasiGrupWhatsApp(Cart $keranjang, string $noSo): void
     {
         $pesan = "🔔 *ORDER BARU - PMO*\n\n"
             . "No. SO: *{$noSo}*\n"
             . 'Toko: *' . $keranjang->user->toko->nama . "*\n"
             . 'Kode Toko: ' . $keranjang->user->fk_toko . "\n"
-            . 'Jumlah Item: ' . $keranjang->items->count() . "\n"
-            . 'Total: *Rp ' . number_format((float) $grandTotal, 0, ',', '.') . "*\n\n"
+            . 'Jumlah Item: ' . $keranjang->items->count() . "\n\n"
             . 'Waktu Order ' . now()->format('d/m/Y H:i:s');
 
         (new WhatsAppGateway(self::ID_KONFIG_WA_GRUP))->sendToGroup($pesan);

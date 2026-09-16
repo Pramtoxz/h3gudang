@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockPart extends Model
 {
+    public const ALLOWED_WAREHOUSES = ['GDG-1', 'GDG-2'];
+
     protected $connection = 'pgsql_dms';
 
     protected $table = 'data_part.tblstock_part';
@@ -17,6 +19,19 @@ class StockPart extends Model
 
     protected $guarded = ['*'];
 
+    public function scopeAllowedWarehouses($query)
+    {
+        return $query->whereIn('fk_gudang', self::ALLOWED_WAREHOUSES);
+    }
+
+    public function scopeForPeriod($query, ?int $bulan = null, ?int $tahun = null)
+    {
+        $bulan = (int) ($bulan ?? date('n'));
+        $tahun = (int) ($tahun ?? date('Y'));
+
+        return $query->where('bulan', $bulan)->where('tahun', $tahun);
+    }
+
     public function part(): BelongsTo
     {
         return $this->belongsTo(Part::class, 'fk_part', 'kd_part');
@@ -24,10 +39,11 @@ class StockPart extends Model
 
     protected function available(): Attribute
     {
-        return Attribute::get(function (): int|float {
-            $minStock = $this->part?->min_stok ?? 0;
+        return Attribute::get(function (): float {
+            $part = $this->part;
+            $minStock = ($part && is_numeric($part->min_stok) && (int) $part->min_stok > 0) ? (int) $part->min_stok : 0;
 
-            return ($this->qty_on_hand - $this->qty_booking) - $minStock;
+            return ((float) $this->qty_on_hand - (float) $this->qty_booking) - $minStock;
         });
     }
 
