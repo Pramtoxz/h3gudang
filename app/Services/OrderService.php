@@ -15,7 +15,10 @@ use RuntimeException;
 
 class OrderService
 {
-    private const KATEGORI_OLI = 'OIL';
+    public const GROUP_OIL = 'OIL';
+    public const GROUP_GMO = 'GMO';
+    public const GROUP_TIRE = 'Tire';
+    public const GROUP_HGP = 'HGP';
 
     private const ID_DEADLINE = 2;
 
@@ -32,24 +35,100 @@ class OrderService
 
             $this->pastikanBelumLewatDeadline();
 
-            $jenisOrder = $this->tentukanJenisOrder($keranjang);
-            $grandTotal = $keranjang->items->sum('subtotal');
-            $noSo = Serial::generateSO();
+            $groupedItems = [
+                self::GROUP_OIL  => [],
+                self::GROUP_GMO  => [],
+                self::GROUP_TIRE => [],
+                self::GROUP_HGP  => [],
+            ];
 
-            $this->simpanSalesOrder($noSo, $jenisOrder, $grandTotal, $keranjang);
+            foreach ($keranjang->items as $item) {
+                $fkDetail = $item->part?->fk_detail_sub_kelompok_part;
+                if (! $fkDetail && $item->part === null) {
+                    $part = Part::where('kd_part', $item->kode_part)->first();
+                    $fkDetail = $part?->fk_detail_sub_kelompok_part;
+                }
+                $group = $this->getPartGroup($fkDetail);
+                $groupedItems[$group][] = $item;
+            }
 
-            $this->kirimNotifikasi($keranjang, $noSo, $userId);
+            $orders = [];
+            $totalAllGrandTotal = 0;
+            $totalAllItemsCount = 0;
+
+            foreach ($groupedItems as $groupName => $items) {
+                if (empty($items)) {
+                    continue;
+                }
+
+                $groupTotal = 0;
+                foreach ($items as $item) {
+                    $groupTotal += (float) $item->subtotal;
+                }
+                $totalAllGrandTotal += $groupTotal;
+                $totalAllItemsCount += count($items);
+
+                $noSo = Serial::generateSO();
+                $jenisOrder = $this->getJenisSoByGroup($groupName);
+                $keterangan = $this->getKeteranganByGroup($groupName);
+
+                $this->simpanSalesOrderGroup($noSo, $jenisOrder, $keterangan, $groupTotal, $keranjang, $items);
+
+                $orders[] = [
+                    'kelompok' => $groupName,
+                    'no_so' => $noSo,
+                    'jenis_so' => $jenisOrder,
+                    'keterangan' => $keterangan,
+                    'grand_total' => $groupTotal,
+                    'items_count' => count($items),
+                ];
+            }
+
+            if (empty($orders)) {
+                throw new RuntimeException('Tidak ada item valid untuk diproses.');
+            }
+
+            $this->kirimNotifikasi($keranjang, $orders, $totalAllItemsCount, $userId);
 
             $keranjang->items()->delete();
             $keranjang->delete();
 
+            $firstOrder = $orders[0];
+
             return [
-                'no_so' => $noSo,
-                'jenis_so' => $jenisOrder,
-                'grand_total' => $grandTotal,
+                'no_so' => $firstOrder['no_so'],
+                'jenis_so' => count($orders) > 1 ? 'Multi SO' : $firstOrder['jenis_so'],
+                'grand_total' => $totalAllGrandTotal,
                 'status' => 'Waiting For Approval',
+                'orders' => $orders,
             ];
         });
+    }
+
+    public function getPartGroup(?string $fkDetailSubKelompok): string
+    {
+        $code = strtoupper(trim((string) $fkDetailSubKelompok));
+        if ($code === 'OIL') {
+            return self::GROUP_OIL;
+        }
+        if ($code === 'GMO') {
+            return self::GROUP_GMO;
+        }
+        if ($code === 'TIRE' || $code === 'TIRE1') {
+            return self::GROUP_TIRE;
+        }
+
+        return self::GROUP_HGP;
+    }
+
+    public function getJenisSoByGroup(string $group): string
+    {
+        return $group === self::GROUP_OIL ? 'Oli Regular' : 'Other';
+    }
+
+    public function getKeteranganByGroup(string $group): string
+    {
+        return 'Order by PMO - ' . $group;
     }
 
     private function ambilKeranjangSiapCheckout(int $userId): Cart
@@ -85,8 +164,14 @@ class OrderService
         }
     }
 
-    private function simpanSalesOrder(string $noSo, string $jenisOrder, float|int|string $grandTotal, Cart $keranjang): void
-    {
+    private function simpanSalesOrderGroup(
+        string $noSo,
+        string $jenisOrder,
+        string $keterangan,
+        float|int|string $grandTotal,
+        Cart $keranjang,
+        array $items
+    ): void {
         SalesOrder::create([
             'no_so' => $noSo,
             'jenis_so' => $jenisOrder,
@@ -100,10 +185,10 @@ class OrderService
             'grand_total' => $grandTotal,
             'status_outstanding' => true,
             'status_approve_reject' => 'Waiting For Approval',
-            'keterangan' => 'Order by PMO',
+            'keterangan' => $keterangan,
         ]);
 
-        foreach ($keranjang->items as $item) {
+        foreach ($items as $item) {
             SalesOrderDetail::create([
                 'fk_so' => $noSo,
                 'fk_part' => $item->kode_part,
@@ -116,57 +201,40 @@ class OrderService
         }
     }
 
-    /**
-     * Sales Order sudah tersimpan di DMS yang berada di luar transaksi ini,
-     * sehingga kegagalan notifikasi tidak boleh membatalkan checkout.
-     */
-    private function kirimNotifikasi(Cart $keranjang, string $noSo, int $userId): void
+    private function kirimNotifikasi(Cart $keranjang, array $orders, int $totalItemCount, int $userId): void
     {
         try {
-            $this->kirimNotifikasiGrupWhatsApp($keranjang, $noSo);
+            $this->kirimNotifikasiGrupWhatsApp($keranjang, $orders, $totalItemCount);
         } catch (\Throwable $e) {
-            Log::error('Gagal kirim notifikasi WA order: ' . $e->getMessage(), ['no_so' => $noSo]);
+            Log::error('Gagal kirim notifikasi WA order: ' . $e->getMessage(), ['orders' => $orders]);
         }
 
         try {
-            $this->notificationService->kirimNotifikasiPesanan($userId, $noSo, 'created');
+            $allSoNumbers = array_column($orders, 'no_so');
+            $soSummary = implode(', ', $allSoNumbers);
+            $this->notificationService->kirimNotifikasiPesanan($userId, $soSummary, 'created');
         } catch (\Throwable $e) {
-            Log::error('Gagal kirim push notification order: ' . $e->getMessage(), ['no_so' => $noSo]);
+            Log::error('Gagal kirim push notification order: ' . $e->getMessage());
         }
     }
 
-    private function kirimNotifikasiGrupWhatsApp(Cart $keranjang, string $noSo): void
+    private function kirimNotifikasiGrupWhatsApp(Cart $keranjang, array $orders, int $totalItemCount): void
     {
         $pesan = "🔔 *ORDER BARU - PMO*\n\n"
-            . "No. SO: *{$noSo}*\n"
-            . 'Toko: *' . $keranjang->user->toko->nama . "*\n"
-            . 'Kode Toko: ' . $keranjang->user->fk_toko . "\n"
-            . 'Jumlah Item: ' . $keranjang->items->count() . "\n\n"
-            . 'Waktu Order ' . now()->format('d/m/Y H:i:s');
+            . 'Toko: *' . ($keranjang->user->toko->nama ?? 'Toko') . "*\n"
+            . 'Kode Toko: ' . ($keranjang->user->fk_toko ?? '-') . "\n"
+            . "Total Item: {$totalItemCount} item\n\n"
+            . "*No. Sales Order:*\n";
+
+        foreach ($orders as $order) {
+            $kelompok = $order['kelompok'];
+            $noSo = $order['no_so'];
+            $itemCount = $order['items_count'];
+            $pesan .= "• [{$kelompok}] {$noSo} ({$itemCount} item)\n";
+        }
+
+        $pesan .= "\nWaktu Order: " . now()->format('d/m/Y H:i:s');
 
         (new WhatsAppGateway(self::ID_KONFIG_WA_GRUP))->sendToGroup($pesan);
-    }
-
-    private function tentukanJenisOrder(Cart $keranjang): string
-    {
-        $jumlahOli = 0;
-        $jumlahPart = 0;
-
-        $kategoriPerPart = Part::whereIn('kd_part', $keranjang->items->pluck('kode_part'))
-            ->pluck('fk_detail_sub_kelompok_part', 'kd_part');
-
-        foreach ($keranjang->items as $item) {
-            $kategoriPerPart->get($item->kode_part) === self::KATEGORI_OLI
-                ? $jumlahOli++
-                : $jumlahPart++;
-        }
-
-        if ($jumlahPart !== $jumlahOli) {
-            return $jumlahPart < $jumlahOli ? 'Oli Regular' : 'Other';
-        }
-
-        $partPertama = $keranjang->items->first()?->kode_part;
-
-        return $kategoriPerPart->get($partPertama) === self::KATEGORI_OLI ? 'Oli Regular' : 'Other';
     }
 }
