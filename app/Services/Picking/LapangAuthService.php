@@ -9,13 +9,43 @@ class LapangAuthService
 {
     public function __construct(
         private readonly AreaOperatorService $areaOperator,
+        private readonly OperatorLoginCodeService $operatorCodeService,
     ) {
+    }
+
+    /**
+     * Login operator lapangan dengan kode akses 6 digit yang digenerate oleh Kepala Gudang.
+     */
+    public function loginWithCode(string $kode): array
+    {
+        $user = $this->operatorCodeService->verifikasiKode($kode);
+
+        if (! $user) {
+            return [
+                'success' => false,
+                'message' => 'Kode akses tidak valid atau sudah kedaluwarsa.',
+            ];
+        }
+
+        $tokenResult = $user->createToken('lapangan-mobile-long');
+
+        return [
+            'success' => true,
+            'token' => $tokenResult->plainTextToken,
+            'user' => [
+                'id' => $user->getKey(),
+                'email' => $user->email,
+                'nama' => $user->name ?? $user->email,
+                'area_operator' => $this->areaOperator->areaUntuk($user),
+                'adalah_admin_area' => $this->areaOperator->adalahAdminArea($user),
+            ],
+        ];
     }
 
     /**
      * Login operator lapangan dengan email + password.
      * Verifikasi terhadap `public.users` di DMS (sama dengan login admin web),
-     * tapi TIDAK menulis apa pun ke DMS — token Sanctum disimpan di
+     * tapi TIDAK menulis apa pun ke DMS ?" token Sanctum disimpan di
      * `warehouse.personal_access_tokens`.
      * 
      * @param  bool  $rememberMe  Jika true, buat token tanpa expiration (default: true)

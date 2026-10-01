@@ -3,6 +3,7 @@
 use App\Http\Controllers\Picking\AksesAreaController;
 use App\Http\Controllers\Picking\ChannelController;
 use App\Http\Controllers\Picking\FinalCheckController;
+use App\Http\Controllers\Picking\KodeAksesController;
 use App\Http\Controllers\Picking\LokasiRakController;
 use App\Http\Controllers\Picking\PickingPartController;
 use Illuminate\Support\Facades\Route;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Route;
  * Prefix `picking`, nama `picking.`, dan middleware auth + check.menu.access
  * dipasang oleh routes/web.php.
  *
- * Layar operator lapangan tidak ada di sini — itu dilayani aplikasi Capacitor
+ * Layar operator lapangan tidak ada di sini ?" itu dilayani aplikasi Capacitor
  * terpisah lewat routes/api/lapangan.php.
  */
 
@@ -50,4 +51,9 @@ Route::prefix('akses-area')->name('akses-area.')->group(function () {
     Route::post('/', [AksesAreaController::class, 'store'])->name('store');
     Route::put('{aksesArea}', [AksesAreaController::class, 'update'])->name('update');
     Route::delete('{aksesArea}', [AksesAreaController::class, 'destroy'])->name('destroy');
+});
+
+Route::prefix('kode-akses')->name('kode-akses.')->group(function () {
+    Route::get('/', [KodeAksesController::class, 'index'])->name('index');
+    Route::post('/', [KodeAksesController::class, 'store'])->name('store');
 });

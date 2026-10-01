@@ -9,17 +9,6 @@ use Illuminate\Http\Request;
 
 /**
  * API endpoint untuk autentikasi operator lapangan (HP).
- * 
- * Endpoint ini berbeda dari `AuthController` untuk toko (yang pakai OTP WhatsApp).
- * Operator lapangan pakai email + password seperti admin desktop.
- * 
- * Response format: {
- *   success: bool,
- *   data: {
- *     token: string,  // Bearer token Sanctum
- *     user: { id, email, name?, area? }
- *   }
- * }
  */
 class LapangAuthController extends Controller
 {
@@ -29,17 +18,41 @@ class LapangAuthController extends Controller
     }
 
     /**
-     * Login operator lapangan dengan email/password.
-     * Return Bearer token untuk API requests selanjutnya.
-     * 
-     * Token tidak pernah expire selama operator tidak logout.
+     * Login operator lapangan dengan kode akses 6 digit yang digenerate oleh Kepala Gudang.
+     */
+    public function loginKode(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'kode' => 'required|string|size:6',
+        ]);
+
+        $result = $this->authService->loginWithCode($validated['kode']);
+
+        if (! $result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Kode akses tidak valid atau sudah kedaluwarsa.',
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'token' => $result['token'],
+                'user' => $result['user'],
+            ],
+        ]);
+    }
+
+    /**
+     * Login operator lapangan dengan email/password (legacy/cadangan).
      */
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
-            'remember_me' => 'boolean', // Optional: true = long-lived token, false = short session
+            'remember_me' => 'boolean',
         ]);
 
         $result = $this->authService->login(
@@ -65,7 +78,7 @@ class LapangAuthController extends Controller
     }
 
     /**
-     * Logout — delete current token.
+     * Logout ?" delete current token.
      */
     public function logout(Request $request): JsonResponse
     {

@@ -6,11 +6,14 @@ use App\Http\Controllers\Api\LapangWorkController;
 use Illuminate\Support\Facades\Route;
 
 /**
- * API operator lapangan — dikonsumsi aplikasi Capacitor di `picking-lapangan/`,
+ * API operator lapangan ?" dikonsumsi aplikasi Capacitor di `picking-lapangan/`,
  * bukan halaman Inertia. Autentikasinya Bearer token Sanctum atas `AdminUser`.
  *
  * Prefix `lapangan` dipasang oleh routes/api.php.
  */
+
+Route::post('/auth/login-kode', [LapangAuthController::class, 'loginKode'])
+    ->middleware('throttle:5,1');
 
 Route::post('/auth/login', [LapangAuthController::class, 'login'])
     ->middleware('throttle:lapangan-login');
