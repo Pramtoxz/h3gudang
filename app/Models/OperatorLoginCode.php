@@ -36,11 +36,11 @@ class OperatorLoginCode extends Model
     public function scopeAktif(Builder $query): Builder
     {
         return $query->whereNull('used_at')
-            ->where('expires_at', '>', now());
+            ->where('expires_at', '>', now('Asia/Jakarta'));
     }
 
     public function isAktif(): bool
     {
-        return $this->used_at === null && $this->expires_at->isFuture();
+        return $this->used_at === null && $this->expires_at->setTimezone('Asia/Jakarta')->isFuture();
     }
 }

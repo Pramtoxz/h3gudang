@@ -1,4 +1,4 @@
-﻿import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,7 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { CheckCircle2, Clock, KeyRound, Loader2, RefreshCw, Search, ShieldCheck } from 'lucide-react';
+import { Clock, KeyRound, Loader2, RefreshCw, Search, ShieldCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 interface KodeAktif {
@@ -51,12 +51,12 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
     const [modalKode, setModalKode] = useState<{ nama: string; email: string; kode: string } | null>(null);
     const [sisaWaktuMap, setSisaWaktuMap] = useState<Record<string, number>>({});
 
-    // Inisialisasi hitung mundur timer lokal
+    // Hitung mundur timer lokal berbasis detik integer
     useEffect(() => {
         const waktuAwal: Record<string, number> = {};
         daftarOperator.forEach((op) => {
             if (op.kode_aktif) {
-                waktuAwal[op.email] = op.kode_aktif.sisa_detik;
+                waktuAwal[op.email] = Math.max(0, Math.floor(op.kode_aktif.sisa_detik));
             }
         });
         setSisaWaktuMap(waktuAwal);
@@ -96,7 +96,6 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
             {
                 preserveScroll: true,
                 onSuccess: (page) => {
-                    // Temukan kode baru yang baru saja digenerate
                     const updatedList = (page.props.daftarOperator as BarisOperator[]) ?? [];
                     const updatedOp = updatedList.find((item) => item.email === op.email);
                     if (updatedOp?.kode_aktif) {
@@ -115,8 +114,9 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
     };
 
     const formatMenitDetik = (detik: number) => {
-        const m = Math.floor(detik / 60);
-        const s = detik % 60;
+        const totalDetik = Math.max(0, Math.floor(detik));
+        const m = Math.floor(totalDetik / 60);
+        const s = totalDetik % 60;
         return `${m}:${s < 10 ? '0' : ''}${s}`;
     };
 
@@ -125,26 +125,31 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
             <Head title="Kode Akses Lapangan" />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <Alert className="border-primary/30 bg-primary/5">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
-                    <AlertTitle className="font-bold text-sm tracking-wide">
-                        Otorisasi Login Operator Lapangan (Hitung Buta / Tanpa Password)
+                <Alert>
+                    <ShieldCheck className="h-4 w-4" />
+                    <AlertTitle className="font-semibold text-sm">
+                        Otorisasi Login Operator Lapangan
                     </AlertTitle>
                     <AlertDescription className="text-xs text-muted-foreground mt-1">
-                        Operator gudang tidak memasukkan email/password di HP. Buat kode 6 digit di bawah ini dan
-                        beritahukan kepada operator saat memulai tugas. Kode berlaku tepat{' '}
-                        <strong>5 menit</strong> dan langsung hangus setelah sukses dipakai masuk.
+                        Operator gudang tidak perlu memasukkan email dan password di HP. Buat kode 6 digit di bawah ini
+                        dan beritahukan kepada operator saat memulai tugas. Kode berlaku tepat{' '}
+                        <strong>5 menit</strong> (WIB / Asia/Jakarta) dan langsung hangus setelah sukses dipakai masuk.
                     </AlertDescription>
                 </Alert>
 
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-3">
-                        <CardTitle className="text-base font-bold flex items-center gap-2">
-                            <KeyRound className="size-4 text-primary" />
-                            Daftar Operator & Kode Aktif
-                        </CardTitle>
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <KeyRound className="size-4" />
+                                Daftar Operator & Kode Akses
+                            </CardTitle>
+                            <p className="text-muted-foreground text-xs mt-0.5">
+                                Kelola kode otorisasi login HP untuk masing-masing operator gudang
+                            </p>
+                        </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                             <div className="relative w-64">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
@@ -172,7 +177,7 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
                                 <TableRow>
                                     <TableHead className="w-12 text-center">No</TableHead>
                                     <TableHead>Nama Operator</TableHead>
-                                    <TableHead>Email Login</TableHead>
+                                    <TableHead>Email Akun</TableHead>
                                     <TableHead>Area Rak</TableHead>
                                     <TableHead className="w-48 text-center">Kode Akses Aktif</TableHead>
                                     <TableHead className="w-36 text-center">Aksi</TableHead>
@@ -197,7 +202,7 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
                                                     {idx + 1}
                                                 </TableCell>
 
-                                                <TableCell className="font-semibold text-sm">
+                                                <TableCell className="font-medium text-sm">
                                                     {op.nama}
                                                 </TableCell>
 
@@ -206,7 +211,7 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
                                                 </TableCell>
 
                                                 <TableCell>
-                                                    <Badge variant="outline" className="font-mono text-[11px] font-bold">
+                                                    <Badge variant="outline" className="font-mono text-[11px]">
                                                         {op.area}
                                                     </Badge>
                                                 </TableCell>
@@ -214,12 +219,12 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
                                                 <TableCell className="text-center">
                                                     {adaKodeAktif ? (
                                                         <div className="flex flex-col items-center gap-1">
-                                                            <div className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2.5 py-1 border border-emerald-300 font-mono text-base font-black tracking-widest text-emerald-700 shadow-xs">
+                                                            <div className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 border font-mono text-base font-bold text-foreground">
                                                                 <span>{op.kode_aktif?.kode.slice(0, 3)}</span>
                                                                 <span>-</span>
                                                                 <span>{op.kode_aktif?.kode.slice(3, 6)}</span>
                                                             </div>
-                                                            <span className="flex items-center gap-1 font-mono text-[10px] text-amber-700 font-semibold">
+                                                            <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
                                                                 <Clock className="size-3" />
                                                                 Sisa {formatMenitDetik(sisaDetik)}
                                                             </span>
@@ -237,7 +242,7 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
                                                         variant={adaKodeAktif ? 'outline' : 'default'}
                                                         disabled={sedangGenerate === op.email}
                                                         onClick={() => buatKode(op)}
-                                                        className="font-bold text-xs"
+                                                        className="text-xs"
                                                     >
                                                         {sedangGenerate === op.email ? (
                                                             <>
@@ -264,24 +269,24 @@ export default function KodeAksesIndex({ daftarOperator }: Props) {
                 </Card>
             </div>
 
-            {/* Modal Dialog Pop-up Saat Kode Baru Selesai Dibuat */}
+            {/* Modal Dialog Standar Saat Kode Baru Selesai Dibuat */}
             <Dialog open={modalKode !== null} onOpenChange={(open) => !open && setModalKode(null)}>
                 <DialogContent className="max-w-md text-center">
                     <DialogHeader className="items-center">
-                        <div className="flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 mb-2">
-                            <CheckCircle2 className="size-6" />
+                        <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary mb-2">
+                            <KeyRound className="size-5" />
                         </div>
                         <DialogTitle className="text-lg font-bold">Kode Akses Berhasil Dibuat</DialogTitle>
-                        <DialogDescription className="text-xs">
+                        <DialogDescription className="text-xs text-muted-foreground">
                             Sebutkan 6 digit angka ini kepada operator <strong>{modalKode?.nama}</strong> untuk login di HP.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="my-4 flex flex-col items-center justify-center rounded-lg border-2 border-emerald-400 bg-emerald-950 p-6 shadow-inner">
-                        <span className="font-mono text-xs font-bold text-emerald-400 uppercase tracking-widest mb-1">
-                            KODE LOGIN (5 MENIT)
+                    <div className="my-4 flex flex-col items-center justify-center rounded-lg border bg-muted/40 p-6">
+                        <span className="font-mono text-xs text-muted-foreground uppercase tracking-widest mb-1.5">
+                            KODE LOGIN (AKTIF 5 MENIT)
                         </span>
-                        <div className="font-mono text-5xl font-black tracking-widest text-emerald-300 drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]">
+                        <div className="font-mono text-5xl font-bold tracking-widest text-foreground">
                             {modalKode?.kode ? `${modalKode.kode.slice(0, 3)} ${modalKode.kode.slice(3, 6)}` : ''}
                         </div>
                     </div>
