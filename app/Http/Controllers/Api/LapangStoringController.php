@@ -36,10 +36,20 @@ class LapangStoringController extends Controller
         ]);
     }
 
-    public function parts(Request $request, string $noPenerimaan): JsonResponse
+    public function parts(Request $request, ?string $noPenerimaan = null): JsonResponse
     {
         $user = $request->user();
+        $noPenerimaan = $noPenerimaan ?: $request->query('no_penerimaan') ?: $request->query('do');
+
+        if (! $noPenerimaan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Parameter nomor penerimaan tidak ditemukan.',
+            ], 400);
+        }
+
         $noPenerimaan = urldecode($noPenerimaan);
+
 
         $detail = $this->service->detailStoring($user, $noPenerimaan);
 

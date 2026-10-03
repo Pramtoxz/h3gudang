@@ -24,9 +24,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/kartustok', [LapangWorkController::class, 'simpanKartuStok']);
 
     Route::get('/storing', [LapangStoringController::class, 'index']);
+    Route::get('/storing/parts', [LapangStoringController::class, 'parts']);
     Route::get('/storing/{noPenerimaan}/parts', [LapangStoringController::class, 'parts'])
         ->where('noPenerimaan', '.*');
     Route::post('/storing/simpan', [LapangStoringController::class, 'simpan']);
     Route::post('/storing/tandai-semua', [LapangStoringController::class, 'tandaiSemua']);
+
 });
 
