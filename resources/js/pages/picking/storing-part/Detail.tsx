@@ -2,16 +2,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
     Table,
     TableBody,
     TableCell,
@@ -20,10 +10,10 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { detail, simpan, tandaiSemua } from '@/routes/picking/storing-part';
+import { detail, updateStatus } from '@/routes/picking/storing-part';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { ArrowLeft, Check, CheckCheck, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { type BarisItemStoring, type DokumenStoring } from './_components/tipe';
@@ -41,7 +31,6 @@ export default function StoringPartDetail({
     fkDo,
     dokumen,
     daftarPart,
-    areaOperator,
     isAdmin,
     urlKembali,
 }: Props) {
@@ -50,85 +39,37 @@ export default function StoringPartDetail({
         { title: `Dokumen ${fkDo}`, href: detail({ query: { do: fkDo } }).url },
     ];
 
-    const [itemDipilih, setItemDipilih] = useState<BarisItemStoring | null>(null);
-    const [inputQty, setInputQty] = useState<number>(0);
-    const [sedangSimpan, setSedangSimpan] = useState(false);
-    const [sedangTandaiSemua, setSedangTandaiSemua] = useState(false);
-
-    const bukaModalInput = (part: BarisItemStoring) => {
-        setItemDipilih(part);
-        setInputQty(part.qty_diterima);
-    };
+    const [sedangProses, setSedangProses] = useState(false);
 
     const tokenCsrf = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
-    const handleSimpanItem = async () => {
-        if (!itemDipilih) return;
-
-        setSedangSimpan(true);
+    const handleUndoStatus = async (id: number) => {
+        setSedangProses(true);
         try {
-            const res = await fetch(simpan().url, {
+            const res = await fetch(updateStatus().url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': tokenCsrf(),
                 },
-                body: JSON.stringify({
-                    fk_do: itemDipilih.fk_do,
-                    no_part: itemDipilih.no_part,
-                    kode_rak: itemDipilih.kode_rak,
-                    qty_masuk: inputQty,
-                }),
+                body: JSON.stringify({ id, status: 'waiting' }),
             });
 
             const data = await res.json();
             if (data.success) {
-                toast.success(data.message);
-                setItemDipilih(null);
+                toast.success('Status part dikembalikan ke antrean waiting.');
                 router.reload();
             } else {
-                toast.error(data.message || 'Gagal menyimpan part ke rak.');
+                toast.error(data.message || 'Gagal mengubah status part.');
             }
-        } catch (e: any) {
-            toast.error(e?.message || 'Terjadi kesalahan sistem.');
+        } catch (e: unknown) {
+            const pesan = e instanceof Error ? e.message : 'Terjadi kesalahan sistem.';
+            toast.error(pesan);
         } finally {
-            setSedangSimpan(false);
+            setSedangProses(false);
         }
     };
-
-    const handleTandaiSemua = async () => {
-        if (!confirm('Tandai semua part yang belum selesai sebagai selesai (Qty Masuk = Qty Diterima)?')) {
-            return;
-        }
-
-        setSedangTandaiSemua(true);
-        try {
-            const res = await fetch(tandaiSemua().url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': tokenCsrf(),
-                },
-                body: JSON.stringify({ fk_do: fkDo }),
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                toast.success(data.message);
-                router.reload();
-            } else {
-                toast.error(data.message || 'Gagal memproses data.');
-            }
-        } catch (e: any) {
-            toast.error(e?.message || 'Terjadi kesalahan.');
-        } finally {
-            setSedangTandaiSemua(false);
-        }
-    };
-
-    const adaYangBelumDone = daftarPart.some((p) => !p.status_masuk);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -139,7 +80,7 @@ export default function StoringPartDetail({
                     <CardHeader className="flex flex-row items-start justify-between space-y-0">
                         <div className="space-y-2">
                             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                                Detail Storing: <span className="font-mono font-bold">{fkDo}</span>
+                                Detail Storing - Dokumen: <span className="font-mono font-bold">{fkDo}</span>
                             </CardTitle>
 
                             <div className="bg-muted/40 space-y-1 rounded-md border-l-4 border-emerald-500 p-3 text-xs sm:text-sm">
@@ -148,7 +89,7 @@ export default function StoringPartDetail({
                                         <strong>Gudang:</strong> {dokumen.nm_gudang_part || dokumen.fk_gudang || '-'}
                                     </span>
                                     <span>
-                                        <strong>Tanggal:</strong>{' '}
+                                        <strong>Tanggal Penerimaan:</strong>{' '}
                                         {dokumen.tgl_kartu
                                             ? new Date(dokumen.tgl_kartu).toLocaleDateString('id-ID')
                                             : '-'}
@@ -160,29 +101,10 @@ export default function StoringPartDetail({
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            {adaYangBelumDone && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleTandaiSemua}
-                                    disabled={sedangTandaiSemua}
-                                    className="border-emerald-600 text-emerald-600 hover:bg-emerald-50"
-                                >
-                                    {sedangTandaiSemua ? (
-                                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <CheckCheck className="mr-1 h-4 w-4" />
-                                    )}
-                                    Ceklis Semua
-                                </Button>
-                            )}
-
-                            <Button variant="outline" size="sm" onClick={() => router.get(urlKembali)}>
-                                <ArrowLeft className="mr-1 h-4 w-4" />
-                                Kembali
-                            </Button>
-                        </div>
+                        <Button variant="outline" size="sm" onClick={() => router.get(urlKembali)}>
+                            <ArrowLeft className="mr-1 h-4 w-4" />
+                            Kembali
+                        </Button>
                     </CardHeader>
 
                     <CardContent>
@@ -194,12 +116,12 @@ export default function StoringPartDetail({
                                         <TableHead>Nomor Part</TableHead>
                                         <TableHead>Deskripsi Part</TableHead>
                                         <TableHead>Nomor Doos</TableHead>
-                                        <TableHead className="text-center">Kode Rak</TableHead>
+                                        <TableHead className="text-center">Lokasi Rak</TableHead>
                                         <TableHead className="text-right">Qty Diterima</TableHead>
                                         <TableHead className="text-right">Qty Masuk</TableHead>
                                         <TableHead className="text-center">Status</TableHead>
                                         <TableHead className="text-center">Waktu Selesai</TableHead>
-                                        <TableHead className="w-28 text-center">Aksi</TableHead>
+                                        <TableHead className="w-36 text-center">Aksi</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -251,18 +173,29 @@ export default function StoringPartDetail({
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {part.status_masuk ? (
-                                                        <span className="text-muted-foreground text-xs italic">
-                                                            Selesai
-                                                        </span>
+                                                        isAdmin ? (
+                                                            <Button
+                                                                variant="secondary"
+                                                                size="sm"
+                                                                onClick={() => handleUndoStatus(part.id)}
+                                                                disabled={sedangProses}
+                                                                title="Admin dapat membatalkan item yang sudah masuk rak"
+                                                            >
+                                                                {sedangProses && (
+                                                                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                                                                )}
+                                                                <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                                                                Undo
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-xs italic">
+                                                                Selesai
+                                                            </span>
+                                                        )
                                                     ) : (
-                                                        <Button
-                                                            size="sm"
-                                                            className="h-8 text-xs font-bold"
-                                                            onClick={() => bukaModalInput(part)}
-                                                        >
-                                                            <Check className="mr-1 h-3.5 w-3.5" />
-                                                            Masuk Rak
-                                                        </Button>
+                                                        <span className="text-muted-foreground text-xs italic">
+                                                            Tunggu operator simpan ke rak
+                                                        </span>
                                                     )}
                                                 </TableCell>
                                             </TableRow>
@@ -274,60 +207,6 @@ export default function StoringPartDetail({
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Modal Input Qty Masuk */}
-            <Dialog open={itemDipilih !== null} onOpenChange={(open) => !open && setItemDipilih(null)}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Konfirmasi Part Masuk Rak</DialogTitle>
-                        <DialogDescription>
-                            Pastikan part telah diletakkan di rak yang sesuai sebelum konfirmasi.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {itemDipilih && (
-                        <div className="space-y-3 py-2 text-sm">
-                            <div className="bg-muted/50 space-y-1.5 rounded-md p-3">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Part Number:</span>
-                                    <span className="font-mono font-bold">{itemDipilih.no_part}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Lokasi Rak:</span>
-                                    <span className="font-mono font-bold text-red-600">{itemDipilih.kode_rak}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Qty Diterima:</span>
-                                    <span className="font-mono font-bold">{itemDipilih.qty_diterima}</span>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <Label htmlFor="qty_masuk">Jumlah Qty Masuk ke Rak</Label>
-                                <Input
-                                    id="qty_masuk"
-                                    type="number"
-                                    min={0}
-                                    max={itemDipilih.qty_diterima}
-                                    value={inputQty}
-                                    onChange={(e) => setInputQty(parseInt(e.target.value, 10) || 0)}
-                                    autoFocus
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setItemDipilih(null)} disabled={sedangSimpan}>
-                            Batal
-                        </Button>
-                        <Button onClick={handleSimpanItem} disabled={sedangSimpan}>
-                            {sedangSimpan && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                            Simpan ke Rak
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </AppLayout>
     );
 }

@@ -56,38 +56,18 @@ class StoringPartController extends Controller
         ]);
     }
 
-    public function simpan(Request $request): JsonResponse
+    public function updateStatus(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'fk_do' => ['required', 'string'],
-            'no_part' => ['required', 'string'],
-            'kode_rak' => ['required', 'string'],
-            'qty_masuk' => ['required', 'integer', 'min:0'],
+            'id' => ['required', 'integer'],
+            'status' => ['required', 'in:waiting'],
         ]);
 
-        $kartuStok = $this->storingPart->simpanMasukRak($this->user(), $validated);
+        $hasil = $this->storingPart->updateStatusPart($this->user(), $validated['id'], $validated['status']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Part berhasil disimpan ke rak.',
-            'waktu_done' => $kartuStok->updated_at?->toIso8601String(),
-        ]);
+        return response()->json($hasil);
     }
 
-    public function tandaiSemua(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'fk_do' => ['required', 'string'],
-        ]);
-
-        $jumlah = $this->storingPart->tandaiSemuaSelesai($this->user(), $validated['fk_do']);
-
-        return response()->json([
-            'success' => true,
-            'message' => sprintf('%d part berhasil ditandai masuk rak.', $jumlah),
-            'jumlah' => $jumlah,
-        ]);
-    }
 
     public function sync(Request $request): JsonResponse
     {

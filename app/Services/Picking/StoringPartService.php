@@ -166,6 +166,34 @@ class StoringPartService
         });
     }
 
+    public function updateStatusPart(AdminUser $user, int $id, string $status): array
+    {
+        abort_unless(
+            $user->it === 't' || $this->areaOperator->adalahAdminArea($user),
+            403,
+            'Hanya admin yang dapat melakukan aksi ini.'
+        );
+
+        return DB::connection('pgsql_dms')->transaction(function () use ($id, $status): array {
+            $kartuStok = KartuStock::query()
+                ->where('id', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($status === 'waiting') {
+                $kartuStok->qty_masuk = null;
+                $kartuStok->status_masuk = false;
+                $kartuStok->save();
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Status part berhasil diubah.',
+                'status' => $status,
+            ];
+        });
+    }
+
     public function tandaiSemuaSelesai(AdminUser $user, string $noPenerimaan): int
     {
         $area = $this->areaOperator->areaUntuk($user);

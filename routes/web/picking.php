@@ -62,7 +62,7 @@ Route::prefix('kode-akses')->name('kode-akses.')->group(function () {
 Route::prefix('storing-part')->name('storing-part.')->group(function () {
     Route::get('/', [StoringPartController::class, 'index'])->name('index');
     Route::get('/detail', [StoringPartController::class, 'detail'])->name('detail');
-    Route::post('/simpan', [StoringPartController::class, 'simpan'])->name('simpan');
-    Route::post('/tandai-semua', [StoringPartController::class, 'tandaiSemua'])->name('tandai-semua');
+    Route::post('/update-status', [StoringPartController::class, 'updateStatus'])->name('update-status');
     Route::post('/sync', [StoringPartController::class, 'sync'])->name('sync');
 });
+
