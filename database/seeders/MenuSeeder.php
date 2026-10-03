@@ -25,6 +25,9 @@ class MenuSeeder extends Seeder
 
     private const MENU_PICKING = [
         ['Picking Part', 'PackageSearch', 'picking.picking-part.index', '/picking/picking-part', 1],
+        ['Final Check', 'ClipboardCheck', 'picking.final-check.index', '/picking/final-check', 2],
+        ['Storing Part', 'PackagePlus', 'picking.storing-part.index', '/picking/storing-part', 3],
+        ['Kode Akses', 'KeyRound', 'picking.kode-akses.index', '/picking/kode-akses', 9],
         ['Master Channel', 'Building2', 'picking.channel.index', '/picking/channel', 10],
         ['Master Lokasi Rak', 'MapPin', 'picking.lokasi-rak.index', '/picking/lokasi-rak', 11],
         ['Master Akses Area', 'UserCog', 'picking.akses-area.index', '/picking/akses-area', 12],

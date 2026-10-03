@@ -6,6 +6,7 @@ use App\Http\Controllers\Picking\FinalCheckController;
 use App\Http\Controllers\Picking\KodeAksesController;
 use App\Http\Controllers\Picking\LokasiRakController;
 use App\Http\Controllers\Picking\PickingPartController;
+use App\Http\Controllers\Picking\StoringPartController;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -56,4 +57,12 @@ Route::prefix('akses-area')->name('akses-area.')->group(function () {
 Route::prefix('kode-akses')->name('kode-akses.')->group(function () {
     Route::get('/', [KodeAksesController::class, 'index'])->name('index');
     Route::post('/', [KodeAksesController::class, 'store'])->name('store');
+});
+
+Route::prefix('storing-part')->name('storing-part.')->group(function () {
+    Route::get('/', [StoringPartController::class, 'index'])->name('index');
+    Route::get('/detail', [StoringPartController::class, 'detail'])->name('detail');
+    Route::post('/simpan', [StoringPartController::class, 'simpan'])->name('simpan');
+    Route::post('/tandai-semua', [StoringPartController::class, 'tandaiSemua'])->name('tandai-semua');
+    Route::post('/sync', [StoringPartController::class, 'sync'])->name('sync');
 });

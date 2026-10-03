@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Picking Lapangan API",
+    "name": "Operator Picking API",
     "description": "API token-based untuk aplikasi operator lapangan (SPA React + Capacitor di folder `picking-lapangan/`).\n\n## Cara pakai\n\n1. Import collection ini ke Postman.\n2. Buka tab **Variables**, sesuaikan `base_url`:\n   - Produksi: `https://picking.menara-agung.com/api`\n   - Lokal: `http://localhost:8000/api`\n3. Jalankan **Auth > Login**. Token otomatis tersimpan ke variable `token` lewat test script, jadi request lain langsung terautentikasi.\n4. Isi variable `fk_do` dan `part_id` dari hasil **Daftar DO** sebelum memakai request Detail/Update.\n\n## Catatan penting\n\n- Autentikasi memakai Sanctum bearer token dan diverifikasi ke `AdminUser` (DMS `public.users`) — akun yang sama dengan login web admin.\n- Nomor DO **mengandung garis miring** (contoh `2026/018310/DO-OTHER`). Route backend memakai `->where('fkDo', '.*')` sehingga garis miring boleh dikirim apa adanya. Kalau Postman meng-encode `{{fk_do}}` jadi `%2F`, tempel saja nomor DO langsung ke URL-nya.\n- Endpoint `kartustok` menolak seluruh batch bila `jumlah_input` tidak sama persis dengan `qty_part` — ini disengaja (operator menghitung buta tanpa melihat Qty Part).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

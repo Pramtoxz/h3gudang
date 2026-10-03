@@ -2,15 +2,9 @@
 
 use App\Http\Controllers\Api\LapangAuthController;
 use App\Http\Controllers\Api\LapangDoController;
+use App\Http\Controllers\Api\LapangStoringController;
 use App\Http\Controllers\Api\LapangWorkController;
 use Illuminate\Support\Facades\Route;
-
-/**
- * API operator lapangan ?" dikonsumsi aplikasi Capacitor di `picking-lapangan/`,
- * bukan halaman Inertia. Autentikasinya Bearer token Sanctum atas `AdminUser`.
- *
- * Prefix `lapangan` dipasang oleh routes/api.php.
- */
 
 Route::post('/auth/login-kode', [LapangAuthController::class, 'loginKode'])
     ->middleware('throttle:5,1');
@@ -23,13 +17,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     Route::get('/do', [LapangDoController::class, 'index']);
 
-    /**
-     * Nomor DO berisi garis miring (`2026/018310/DO-OTHER`), jadi pembatasnya
-     * harus `.*` supaya tidak terpecah jadi beberapa segmen path.
-     */
     Route::get('/do/{fkDo}/parts', [LapangWorkController::class, 'parts'])
         ->where('fkDo', '.*');
 
     Route::post('/part/update-status', [LapangWorkController::class, 'updateStatus']);
     Route::post('/kartustok', [LapangWorkController::class, 'simpanKartuStok']);
+
+    Route::get('/storing', [LapangStoringController::class, 'index']);
+    Route::get('/storing/{noPenerimaan}/parts', [LapangStoringController::class, 'parts'])
+        ->where('noPenerimaan', '.*');
+    Route::post('/storing/simpan', [LapangStoringController::class, 'simpan']);
+    Route::post('/storing/tandai-semua', [LapangStoringController::class, 'tandaiSemua']);
 });
+
